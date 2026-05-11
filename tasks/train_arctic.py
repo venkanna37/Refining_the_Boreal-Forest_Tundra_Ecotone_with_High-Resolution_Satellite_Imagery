@@ -1,8 +1,6 @@
 import sys
 import argparse
 
-from botocore import args
-
 sys.path.append("..")
 from pipelines import training
 
@@ -26,16 +24,16 @@ if __name__ == '__main__':
     parser.add_argument("--model_size", type=str, default='small')
     parser.add_argument("--loss_function", type=str, default='tversky')
     parser.add_argument("--alpha", type=float, help='tversky loss param', default=0.7)
-    parser.add_argument("--geom_aug", action=argparse.BooleanOptionalAction, default=False)
-    parser.add_argument("--use_wb", action=argparse.BooleanOptionalAction, default=False)
 
+    # visualisation params
+    parser.add_argument("--use_wb", action=argparse.BooleanOptionalAction, default=False)
 
     params = vars(parser.parse_args())
     params['data_dir'] = f'../data/geofolds/fold{params["data_fold"]}/'
     if params['server'] == 'lumi':
         params['runs_dir'] = '/scratch/project_465002698/venky/projects/arctic/runs'
     if params['server'] == 'local':
-        params['runs_dir'] = 'runs'
+        params['runs_dir'] = '../runs'
 
     train = training.Training(**params)
     train.train()

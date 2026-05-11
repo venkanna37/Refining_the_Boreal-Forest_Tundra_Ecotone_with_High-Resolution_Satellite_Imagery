@@ -1,5 +1,5 @@
 """
-Training DINOv3Seg with WandB logging and comprehensive metrics
+Training UNet with WandB logging and comprehensive metrics
 """
 
 import os
@@ -7,48 +7,13 @@ import torch
 import wandb
 import numpy as np
 from tqdm import tqdm
-import torch.nn as nn
-import torch.nn.init as init
+
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from pipelines import datagen, network
+from pipelines import utils
 
-
-def init_kaiming(m):
-    if isinstance(m, nn.Conv2d):
-        init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
-        if m.bias is not None:
-            nn.init.zeros_(m.bias)
-
-
-class MetricsCalculator:
-    """Calculate metrics from accumulated TP, FP, FN, TN"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.tp = self.fp = self.fn = self.tn = 0
-
-    def update(self, pred, target):
-        pred, target = pred.flatten(), target.flatten()
-        self.tp += ((pred == 1) & (target == 1)).sum().item()
-        self.fp += ((pred == 1) & (target == 0)).sum().item()
-        self.fn += ((pred == 0) & (target == 1)).sum().item()
-        self.tn += ((pred == 0) & (target == 0)).sum().item()
-
-    def compute(self):
-        precision = self.tp / (self.tp + self.fp) if (self.tp + self.fp) > 0 else 0.0
-        recall = self.tp / (self.tp + self.fn) if (self.tp + self.fn) > 0 else 0.0
-        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-        accuracy = (self.tp + self.tn) / (self.tp + self.tn + self.fp + self.fn + 1e-8)
-        iou = self.tp / (self.tp + self.fp + self.fn) if (self.tp + self.fp + self.fn) > 0 else 0.0
-
-        return {
-            'precision': precision, 'recall': recall, 'f1': f1,
-            'accuracy': accuracy, 'iou': iou,
-            'tp': self.tp, 'fp': self.fp, 'fn': self.fn, 'tn': self.tn
-        }
 
 def tversky(y_t, y_pred, y_w=None, alpha=0.7, smooth=0.000001):
 
@@ -99,27 +64,22 @@ class Training:
         # data parameters
         self.batch_size = kwargs.get('batch_size', 2)
         self.patch_size = kwargs.get('patch_size', 256)
-        self.data_dir = kwargs.get('data_dir', 'data/sample_data')
         self.stretch_setting = kwargs.get('stretch_setting', 1)
+        self.data_dir = kwargs.get('data_dir', None)
 
         # Training parameters
         self.epochs = kwargs.get('epochs', 300)
+        self.num_workers = kwargs.get('num_workers', 8)
         self.learning_rate = kwargs.get('learning_rate', 0.0001)
-        self.runs_dir = kwargs.get('runs_dir', 'runs')
         self.boundary_weight = kwargs.get('boundary_weight', 1)
-        self.load_model = kwargs.get('load', None)
-        self.model_type = kwargs.get('model', "unet")
-        self.geom_aug = kwargs.get('geom_aug', False)
-        self.write_images = kwargs.get('write_images', True)
+        self.model_size = kwargs.get('model_size', 'small')
         self.loss_function = kwargs.get('loss_function', 'tversky')
         self.alpha = kwargs.get('alpha', 0.5)
-        self.num_workers = kwargs.get('num_workers', 8)
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.runs_dir = kwargs.get('runs_dir', 'runs')
+        self.load_model = kwargs.get('load', None)  # not using for now
         self.checkpoints_dir = os.path.join(self.runs_dir, self.keyword)
         os.makedirs(self.checkpoints_dir, exist_ok=True)
-
-        # model paramters
-        self.model_size = kwargs.get('model_size', 'small')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         # Visualisation
         self.use_wb = kwargs.get('use_wb', False)
@@ -139,7 +99,7 @@ class Training:
 
         """Run one epoch of training or validation"""
         model.train() if is_train else model.eval()
-        metrics_calc = MetricsCalculator()
+        metrics_calc = utils.MetricsCalculator()
         total_loss = 0
 
         desc = "train" if is_train else "val"
@@ -149,7 +109,7 @@ class Training:
             image, mask = batch[0].to(self.device), batch[1].to(self.device)
 
             # manually remove 47 pixel boundary from label mask
-            mask = mask[:, :, 47:-47, 47:-47]  #fixme make it automatic finding
+            mask = mask[:, :, 47:-47, 47:-47]  #fixme make it automatic finding border pixels
 
             if is_train:
 
@@ -229,7 +189,7 @@ class Training:
 
         # Setup model
         model = network.TinyUNet(size=self.model_size)
-        model.apply(init_kaiming)
+        model.apply(utils.init_kaiming)
         n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print('number of params:', n_params)
 
