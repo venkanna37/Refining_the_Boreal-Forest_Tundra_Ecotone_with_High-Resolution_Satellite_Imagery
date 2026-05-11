@@ -8,10 +8,11 @@ import wandb
 import numpy as np
 from tqdm import tqdm
 import torch.nn as nn
-import datagen, network
 import torch.nn.init as init
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+
+from pipelines import datagen, network
 
 
 def init_kaiming(m):
@@ -99,31 +100,36 @@ class Training:
         self.batch_size = kwargs.get('batch_size', 2)
         self.patch_size = kwargs.get('patch_size', 256)
         self.data_dir = kwargs.get('data_dir', 'data/sample_data')
+        self.stretch_setting = kwargs.get('stretch_setting', 1)
 
         # Training parameters
         self.epochs = kwargs.get('epochs', 300)
         self.learning_rate = kwargs.get('learning_rate', 0.0001)
         self.runs_dir = kwargs.get('runs_dir', 'runs')
-        self.weight = kwargs.get('weight', 1)
+        self.boundary_weight = kwargs.get('boundary_weight', 1)
         self.load_model = kwargs.get('load', None)
         self.model_type = kwargs.get('model', "unet")
         self.geom_aug = kwargs.get('geom_aug', False)
         self.write_images = kwargs.get('write_images', True)
         self.loss_function = kwargs.get('loss_function', 'tversky')
         self.alpha = kwargs.get('alpha', 0.5)
+        self.num_workers = kwargs.get('num_workers', 8)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.checkpoints_dir = os.path.join(self.runs_dir, self.keyword)
         os.makedirs(self.checkpoints_dir, exist_ok=True)
 
         # model paramters
         self.model_size = kwargs.get('model_size', 'small')
+
         # Visualisation
-        self.writer = wandb.init(
-            project="Arctic",
-            name=self.keyword,
-            dir=self.runs_dir,
-            config={k: v for k, v in kwargs.items() if k != 'load'}
-        )
+        self.use_wb = kwargs.get('use_wb', False)
+        if self.use_wb:
+            self.writer = wandb.init(
+                project="Arctic",
+                name=self.keyword,
+                dir=self.runs_dir,
+                config={k: v for k, v in kwargs.items() if k != 'load'}
+            )
 
     def run_epoch(self,
                   model,
@@ -143,14 +149,13 @@ class Training:
             image, mask = batch[0].to(self.device), batch[1].to(self.device)
 
             # manually remove 47 pixel boundary from label mask
-            if self.model_type == 'tinynet':
-                mask = mask[:, :, 47:-47, 47:-47]
+            mask = mask[:, :, 47:-47, 47:-47]  #fixme make it automatic finding
 
             if is_train:
 
                 mask = (mask > 0.5).long()
                 y_w = mask[:, [1]]
-                y_w = torch.where(y_w==1, self.weight, 1)
+                y_w = torch.where(y_w==1, self.boundary_weight, 1)
                 mask = mask[:, [0]]
 
                 pred = model(image)
@@ -206,16 +211,25 @@ class Training:
         train_set = datagen.Datagen(self.data_dir,
                                     set_name="train",
                                     patch_size=self.patch_size,
-                                    geom_aug=self.geom_aug)
-        train_loader = DataLoader(train_set, self.batch_size, drop_last=True, shuffle=True, num_workers=4)
+                                    stretch_setting=self.stretch_setting)
+        train_loader = DataLoader(train_set,
+                                  self.batch_size,
+                                  drop_last=True,
+                                  shuffle=True,
+                                  num_workers=self.num_workers)
 
-        val_set = datagen.Datagen(self.data_dir, set_name="val", patch_size=512)
-        val_loader = DataLoader(val_set, min(self.batch_size, 24), drop_last=False, shuffle=False, num_workers=4)
+        val_set = datagen.Datagen(self.data_dir,
+                                  set_name="val",
+                                  patch_size=512)
+        val_loader = DataLoader(val_set,
+                                min(self.batch_size, 24),
+                                drop_last=False,
+                                shuffle=False,
+                                num_workers=self.num_workers)
 
         # Setup model
         model = network.TinyUNet(size=self.model_size)
         model.apply(init_kaiming)
-
         n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print('number of params:', n_params)
 
@@ -224,7 +238,7 @@ class Training:
 
         model.to(self.device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5000, gamma=0.5)
+        # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5000, gamma=0.5)
 
         # Training loop
         print("Start training")
@@ -241,7 +255,8 @@ class Training:
             log_data = {f'train_{k}': v for k, v in train_results.items()}
             log_data.update({f'val_{k}': v for k, v in val_results.items()})
             log_data['epoch'] = epoch + 1
-            self.writer.log(log_data)
+            if self.use_wb:
+                self.writer.log(log_data)
 
             # Save checkpoints
             all_metrics = {**{f'train_{k}': v for k, v in train_results.items()},
@@ -257,7 +272,6 @@ class Training:
 
             # Log to CSV
             self.log_to_csv(epoch, train_results, val_results)
-            scheduler.step()
 
         self.write_checkpoint_summary()
         wandb.finish()

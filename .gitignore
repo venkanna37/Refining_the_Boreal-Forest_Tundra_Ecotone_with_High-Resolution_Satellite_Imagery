@@ -4,3 +4,6 @@
 # folders
 documents
 .idea
+data
+runs
+pipelines/__pycache__
