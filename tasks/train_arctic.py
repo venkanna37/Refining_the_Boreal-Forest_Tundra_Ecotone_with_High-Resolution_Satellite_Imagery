@@ -19,7 +19,7 @@ if __name__ == '__main__':
     # model and training parameters
     parser.add_argument("--epochs", type=int, default=10000)
     parser.add_argument("--num_workers", type=int, default=8)
-    parser.add_argument("--learning_rate", type=float, default=0.0001)
+    parser.add_argument("--learning_rate", type=float, default=0.0005)
     parser.add_argument("--boundary_weight", type=float, default=2)  # weight to boundary pixels
     parser.add_argument("--model_size", type=str, default='small')
     parser.add_argument("--loss_function", type=str, default='tversky')

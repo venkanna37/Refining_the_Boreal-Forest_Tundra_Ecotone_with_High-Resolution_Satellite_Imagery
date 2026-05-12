@@ -62,11 +62,11 @@ class Datagen:
             image = image[:, cy:cy + self.patch_size, cx:cx + self.patch_size]
             label = label[:, cy:cy + self.patch_size, cx:cx + self.patch_size]
 
-        # apply image stretch
-        if self.stretch_setting == 1:
-            image = image * np.random.uniform(0.8, 1.25)
-        elif self.stretch_setting == 2:
-            image = image * np.random.uniform(0.5, 2.0)
+            # apply image stretch
+            if self.stretch_setting == 1:
+                image = image * np.random.uniform(0.8, 1.25)
+            elif self.stretch_setting == 2:
+                image = image * np.random.uniform(0.5, 2.0)
 
         return image, label
 

@@ -102,9 +102,3 @@ class TinyUNet(nn.Module):
         out = self.out_conv(d1)
 
         return out
-
-# model = TinyUNet()
-# print(model)
-# rand_tensor = torch.randn(4, 1, 256, 256)
-# pred = model(rand_tensor)
-# print(pred.shape)
