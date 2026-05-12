@@ -1,10 +1,10 @@
 import os
-
 import torch
 import rasterio
 import numpy as np
 import pandas as pd
 from glob import glob
+from tqdm import tqdm
 from pipelines import network
 from torchmetrics.classification import BinaryStatScores
 
@@ -13,6 +13,14 @@ def common_prefix(name):
     name = name.replace("_test_labels", "").replace("_labels", "")
     parts = name.split("_")
     return "_".join(parts)  #[:3])
+
+
+def estimate_metrics(tp, fp, tn, fn):
+    precision = tp / (tp + fp) if (tp + fp) > 0 else torch.tensor(0.0)
+    recall = tp / (tp + fn) if (tp + fn) > 0 else torch.tensor(0.0)
+    f1 = 2 * precision * recall / (precision + recall + 0.000001)
+    accuracy = (tp + tn) / (tp + tn + fp + fn)
+    return precision, recall, f1, accuracy
 
 
 # function that take dictionary of models and gives the final mask
@@ -54,14 +62,10 @@ def ensemble_union_predict(models,
 def apply_model_on_geotiff(
         geotiff_path,
         checkpoint_path,
-        device=None,
-        rescale_value = 2000
-):
-    if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device='cpu',
+        rescale_value = 2000):
 
     models = {}
-
     for i, path in enumerate(checkpoint_path):
         model = network.TinyUNet()
         checkpoint = torch.load(path, map_location=device)
@@ -69,7 +73,6 @@ def apply_model_on_geotiff(
         model.to(device)
         model.eval()
         models[f"model_{i + 1}"] = model
-
 
     with rasterio.open(geotiff_path) as src:
         image = src.read(1).astype(np.float32) / rescale_value
@@ -82,118 +85,14 @@ def apply_model_on_geotiff(
 
     with torch.no_grad():
         patch = image.to(device)
-        pred = ensemble_union_predict(models, patch)[0, 0]
+        if len(checkpoint_path) > 1:
+            pred = ensemble_union_predict(models, patch)
+        else:
+            model = models['model_1']
+            logits = model(patch)
+            pred = (logits > 0).int()
 
-    return pred.cpu().numpy()
-
-
-def pixel_metrics_table(labels_dir,
-                        predictions_dir,
-                        out_csv=None
-                        ):
-    rows = []
-
-    tif_files = [f for f in os.listdir(args.input_dir) if f.lower().endswith(".tif")]
-    label_files = sorted(Path(labels_dir).glob("*.tif"))
-    pred_files = list(Path(predictions_dir).glob("*.tif"))
-    print(f'Number of image: len(label_files), len(pred_files)')
-    print(len(label_files), len(pred_files))
-
-    for label_path in label_files:
-        prefix = common_prefix(label_path.stem)
-
-        matches = [
-            p for p in pred_files
-            if p.stem.startswith(prefix)
-        ]
-
-        if len(matches) != 1:
-            continue
-
-        pred_path = matches[0]
-
-        with rasterio.open(label_path) as src:
-            y_true = src.read(1)
-            y_true[y_true > 1] = 0
-            y_true = y_true.astype(bool)
-
-        with rasterio.open(pred_path) as src:
-            y_pred = src.read(1).astype(bool)
-
-        y_true = y_true[47:-47, 47:-47]
-        y_pred = y_pred[47:-47, 47:-47]
-        # print(y_true.sum())
-        # print(y_pred.sum())
-        tp = np.logical_and(y_pred, y_true).sum()
-        tn = np.logical_and(~y_pred, ~y_true).sum()
-        fp = np.logical_and(y_pred, ~y_true).sum()
-        fn = np.logical_and(~y_pred, y_true).sum()
-
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = (
-            2 * precision * recall / (precision + recall)
-            if (precision + recall) > 0 else 0.0
-        )
-        accuracy = (tp + tn) / (tp + tn + fp + fn)
-
-        parts = prefix.split("_")
-        location = parts[0]
-        season = parts[2]
-
-        rows.append({
-            "Location": location,
-            "Season": season,
-            "True Positives": int(tp),
-            "True Negatives": int(tn),
-            "False Positives": int(fp),
-            "False Negatives": int(fn),
-            "Precision": precision,
-            "Recall": recall,
-            "F1": f1,
-            "Accuracy": accuracy
-        })
-
-    df = pd.DataFrame(rows)
-
-    if df.empty:
-        if out_csv is not None:
-            out_csv = Path(out_csv)
-            out_csv.parent.mkdir(parents=True, exist_ok=True)
-            df.to_csv(out_csv, index=False)
-        return df
-
-    tp = df["True Positives"].sum()
-    tn = df["True Negatives"].sum()
-    fp = df["False Positives"].sum()
-    fn = df["False Negatives"].sum()
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1 = 2 * precision * recall / (precision + recall)
-    accuracy = (tp + tn) / (tp + tn + fp + fn)
-
-    avg_row = {
-        "Location": "ALL",
-        "Season": "ALL",
-        "True Positives": tp,
-        "True Negatives": tn,
-        "False Positives": fp,
-        "False Negatives": fn,
-        "Precision": precision ,
-        "Recall": recall,
-        "F1": f1,
-        "Accuracy": accuracy
-    }
-
-    df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)
-
-    if out_csv is not None:
-        out_csv = Path(out_csv)
-        out_csv.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(out_csv, index=False)
-
-    print(df)
-    return df
+    return pred[0, 0]
 
 
 class ArcticEvaluation:
@@ -202,23 +101,49 @@ class ArcticEvaluation:
         self.labels = sorted(glob(os.path.join(kwargs['label_dir'], '*.tif')))
         self.pretrained_model = kwargs['pretrained_model']
         self.ensemble = kwargs['ensemble']
+        self.set_name = kwargs['set_name']
+        self.slice = 7 if self.set_name == 'test' else 24
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def run(self):
+
+        metrics = BinaryStatScores().to(self.device)
+        individual_metrics = BinaryStatScores().to(self.device)
+
         for image_path, label_path in zip(self.images, self.labels):
-            assert os.path.basename(image_path)[:24] == os.path.basename(label_path)[:24],'image != label'
+            assert os.path.basename(image_path)[:self.slice] == os.path.basename(label_path)[:self.slice],'image != label'
             # get prediction mask
-            if self.ensemble:
-                y_pred = apply_model_on_geotiff(image_path, self.pretrained_model, )
-            else:
-                raise NotImplementedError
+            y_pred = apply_model_on_geotiff(image_path,
+                                            self.pretrained_model,
+                                            device=self.device)
 
             # get gound truth mask
             with rasterio.open(label_path) as src:
                 y_true = src.read(1)
                 y_true[y_true > 1] = 0
-                y_true = y_true.astype(np.uint8)
+                y_true = y_true[47:-47, 47:-47]
+                y_true = torch.from_numpy(y_true).to(self.device)
 
-            import ipdb; ipdb.set_trace()
+            metrics.update(y_pred, y_true)
+            if self.set_name == 'test':
+                individual_metrics.reset()
+                individual_metrics.update(y_pred, y_true)
+                tp, fp, tn, fn, sup = individual_metrics.compute()
+                pre, rec, f1, acc = estimate_metrics(tp, fp, tn, fn)
+                tp, fp, tn, fn = round(tp.item(),2), round(fp.item(),2), round(tn.item(),2), round(fn.item(),2)
+                pre, rec, f1, acc = round(pre.item(),2), round(rec.item(),2), round(f1.item(),2), round(acc.item(),2)
+
+                print(f'{os.path.basename(image_path)[:14]:15s} {str(tp):10s} {str(tn):10s} {str(fp):10s} {str(fn):10s}'
+                      f' {str(pre):7s} {str(rec):7s} {str(f1):7s} {acc}')
+
+        tp, fp, tn, fn, sup = metrics.compute()
+        pre, rec, f1, acc = estimate_metrics(tp, fp, tn, fn)
+        tp, fp, tn, fn = round(tp.item(), 2), round(fp.item(), 2), round(tn.item(), 2), round(fn.item(), 2)
+        pre, rec, f1, acc = round(pre.item(), 2), round(rec.item(), 2), round(f1.item(), 2), round(acc.item(), 2)
+
+        print(f'{"ALL":15s} {str(tp):10s} {str(tn):10s} {str(fp):10s} {str(fn):10s}'
+              f' {str(pre):7s} {str(rec):7s} {str(f1):7s} {acc}')
 
 
 
