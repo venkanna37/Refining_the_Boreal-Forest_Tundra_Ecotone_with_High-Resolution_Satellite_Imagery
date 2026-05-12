@@ -1,15 +1,25 @@
+import os
+
 import torch
 import rasterio
-import argparse
 import numpy as np
 import pandas as pd
-from pathlib import Path
+from glob import glob
 from pipelines import network
+from torchmetrics.classification import BinaryStatScores
 
 
+def common_prefix(name):
+    name = name.replace("_test_labels", "").replace("_labels", "")
+    parts = name.split("_")
+    return "_".join(parts)  #[:3])
 
+
+# function that take dictionary of models and gives the final mask
 @torch.no_grad()
-def ensemble_union_predict(models, input_patch, mode = "majority"):
+def ensemble_union_predict(models,
+                           input_patch,
+                           ensemble_mode="majority"):
     """
     Predict from multiple models
     """
@@ -29,10 +39,10 @@ def ensemble_union_predict(models, input_patch, mode = "majority"):
 
     stacked = torch.stack(individual_masks, dim=0)
     # MAJORITY
-    if mode == "majority":
+    if ensemble_mode == "majority":
         mask = torch.mean(stacked, dim=0)
         mask = (mask > 0.5).to(torch.uint8)
-    elif mode == "intersection":
+    elif ensemble_mode == "intersection":
         # INTERSECTION
         mask = stacked > 0.5
         mask = torch.all(mask, dim=0).to(torch.uint8)
@@ -40,6 +50,7 @@ def ensemble_union_predict(models, input_patch, mode = "majority"):
     return mask
 
 
+# function that takes the image and give the prediction
 def apply_model_on_geotiff(
         geotiff_path,
         checkpoint_path,
@@ -76,20 +87,16 @@ def apply_model_on_geotiff(
     return pred.cpu().numpy()
 
 
-def common_prefix(name):
-    name = name.replace("_test_labels", "").replace("_labels", "")
-    parts = name.split("_")
-    return "_".join(parts)  #[:3])
-
-
 def pixel_metrics_table(labels_dir,
                         predictions_dir,
                         out_csv=None
                         ):
     rows = []
 
+    tif_files = [f for f in os.listdir(args.input_dir) if f.lower().endswith(".tif")]
     label_files = sorted(Path(labels_dir).glob("*.tif"))
     pred_files = list(Path(predictions_dir).glob("*.tif"))
+    print(f'Number of image: len(label_files), len(pred_files)')
     print(len(label_files), len(pred_files))
 
     for label_path in label_files:
@@ -188,15 +195,30 @@ def pixel_metrics_table(labels_dir,
     print(df)
     return df
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
 
-    # Parameters
-    parser.add_argument("--keyword", type=str, help="Keyword used to save the model")
-    parser.add_argument("--labels_dir", type=str, help="labels dir", default="data/testdata/labels")
-    params = vars(parser.parse_args())
-    # predictions_dir = f"./data/testdata/pred_{params.get('keyword')}"
-    predictions_dir = f"data/predictions/pred_{params.get('keyword')}"
-    # out_csv = f"./data/testdata/results_{params.get('keyword')}.csv"
-    out_csv = f"data/predictions/results_{params.get('keyword')}.csv"
-    pixel_metrics_table(params.get("labels_dir"), predictions_dir, out_csv)
+class ArcticEvaluation:
+    def __init__(self, **kwargs):
+        self.images = sorted(glob(os.path.join(kwargs['image_dir'], '*.tif')))
+        self.labels = sorted(glob(os.path.join(kwargs['label_dir'], '*.tif')))
+        self.pretrained_model = kwargs['pretrained_model']
+        self.ensemble = kwargs['ensemble']
+
+    def run(self):
+        for image_path, label_path in zip(self.images, self.labels):
+            assert os.path.basename(image_path)[:24] == os.path.basename(label_path)[:24],'image != label'
+            # get prediction mask
+            if self.ensemble:
+                y_pred = apply_model_on_geotiff(image_path, self.pretrained_model, )
+            else:
+                raise NotImplementedError
+
+            # get gound truth mask
+            with rasterio.open(label_path) as src:
+                y_true = src.read(1)
+                y_true[y_true > 1] = 0
+                y_true = y_true.astype(np.uint8)
+
+            import ipdb; ipdb.set_trace()
+
+
+
