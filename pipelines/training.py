@@ -15,13 +15,18 @@ from pipelines import datagen, network
 from pipelines import utils
 
 
-def tversky(y_t, y_pred, y_w=None, alpha=0.7, smooth=0.000001):
+def tversky(y_t,
+            y_pred,
+            y_ext=None,
+            alpha=0.7,
+            smooth=1e-6,
+            target_weight=1):
+    if y_ext is None:
+        y_ext = torch.ones_like(y_t)
 
-    if y_w is None:
-        y_w = torch.ones_like(y_pred)
     tp = torch.sum(y_pred * y_t)
-    fp = (1 - alpha) * torch.sum((y_pred * y_w) * (1 - y_t))
-    fn = alpha * torch.sum(((1 - y_pred) * y_w) * y_t)
+    fp = (1 - alpha) * torch.sum((y_pred * y_ext) * (1 - y_t))
+    fn = alpha * torch.sum((1 - y_pred) * y_t * target_weight)
 
     numerator = tp
     denominator = tp + fp + fn
@@ -72,6 +77,7 @@ class Training:
         self.num_workers = kwargs.get('num_workers', 8)
         self.learning_rate = kwargs.get('learning_rate', 0.0001)
         self.boundary_weight = kwargs.get('boundary_weight', 1)
+        self.target_weight = kwargs.get('target_weight', 1)
         self.model_size = kwargs.get('model_size', 'small')
         self.loss_function = kwargs.get('loss_function', 'tversky')
         self.alpha = kwargs.get('alpha', 0.5)
@@ -104,7 +110,6 @@ class Training:
 
         desc = "train" if is_train else "val"
         pbar = tqdm(dataloader, desc=desc)
-
         for batch in pbar:
             image, mask = batch[0].to(self.device), batch[1].to(self.device)
 
@@ -114,7 +119,7 @@ class Training:
             if is_train:
 
                 mask = (mask > 0.5).long()
-                y_w = mask[:, [1]]
+                y_w, y_w2 = mask[:, [1]], mask[:, [0]]
                 y_w = torch.where(y_w==1, self.boundary_weight, 1)
                 mask = mask[:, [0]]
 
@@ -123,7 +128,9 @@ class Training:
                 # estimate loss function
                 if self.loss_function == 'tversky':
                     prob = torch.sigmoid(pred)
-                    loss = tversky(mask.float(), prob, y_w.float(), alpha=self.alpha)
+                    loss = tversky(mask.float(), prob, y_w.float(),
+                                   alpha=self.alpha,
+                                   target_weight=self.target_weight)
                 elif self.loss_function == 'ce':
                     loss = F.binary_cross_entropy_with_logits(pred, mask.float(), reduction="none")
                     loss = (loss * y_w).mean()
@@ -147,9 +154,13 @@ class Training:
 
             total_loss += loss.item()
             metrics_calc.update((pred > 0).long(), mask)
-
             current = metrics_calc.compute()
-            pbar.set_postfix(loss=total_loss/(pbar.n+1), iou=current['iou'], f1=current['f1'])
+            if torch.cuda.is_available():
+                peak_memory = torch.cuda.max_memory_allocated() / (1024 ** 2)
+                peak_memory = f'{peak_memory:.1f} MB'
+            else:
+                peak_memory = '0 MB'
+            pbar.set_postfix(loss=total_loss/(pbar.n+1), iou=current['iou'], f1=current['f1'], mem=peak_memory)
 
         results = metrics_calc.compute()
         results['loss'] = total_loss / len(dataloader)
