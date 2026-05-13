@@ -2,17 +2,9 @@ import os
 import torch
 import rasterio
 import numpy as np
-import pandas as pd
 from glob import glob
-from tqdm import tqdm
 from pipelines import network
 from torchmetrics.classification import BinaryStatScores
-
-
-def common_prefix(name):
-    name = name.replace("_test_labels", "").replace("_labels", "")
-    parts = name.split("_")
-    return "_".join(parts)  #[:3])
 
 
 def estimate_metrics(tp, fp, tn, fn):

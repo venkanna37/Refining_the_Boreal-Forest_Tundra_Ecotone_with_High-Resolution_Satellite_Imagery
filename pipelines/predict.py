@@ -1,26 +1,21 @@
-"""
-Code for evaluating on test data
-Implemented for only UNet model
-"""
-
 import os
 import torch
 import rasterio
-import argparse
 import numpy as np
+from glob import glob
 from tqdm import tqdm
 from pipelines import network
+from itertools import product
+from rasterio.windows import Window
 
 
+# function that take dictionary of models and gives the final mask
 @torch.no_grad()
-def ensemble_union_predict(models, input_patch, mode = "majority"):
+def ensemble_union_predict(models,
+                           input_patch,
+                           ensemble_mode="majority"):
     """
-    Args:
-        models (list or dict): list/dict of PyTorch models (eval mode)
-        input_patch (torch.Tensor): (B, C, H, W)
-
-    Returns:
-        union_mask (torch.Tensor): (B, 1, H, W) binary mask
+    Predict from multiple models
     """
 
     individual_masks = []
@@ -38,10 +33,10 @@ def ensemble_union_predict(models, input_patch, mode = "majority"):
 
     stacked = torch.stack(individual_masks, dim=0)
     # MAJORITY
-    if mode == "majority":
+    if ensemble_mode == "majority":
         mask = torch.mean(stacked, dim=0)
         mask = (mask > 0.5).to(torch.uint8)
-    elif mode == "intersection":
+    elif ensemble_mode == "intersection":
         # INTERSECTION
         mask = stacked > 0.5
         mask = torch.all(mask, dim=0).to(torch.uint8)
@@ -49,18 +44,26 @@ def ensemble_union_predict(models, input_patch, mode = "majority"):
     return mask
 
 
+def get_patch_offsets(width, height, stride):
+    """
+    Get a list of patch offsets based on image size, patch size and stride.
+    """
+    # Create iterator of all patch offsets, as tuples (x_off, y_off)
+    patch_offsets = list(product(range(0, width, stride), range(0, height, stride)))
+    return patch_offsets
+
+
+# function that takes the image and give the prediction
 def apply_model_on_geotiff(
         geotiff_path,
         checkpoint_path,
         output_path,
-        device=None,
-        rescale_value = 2000
-):
-    if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device='cpu',
+        rescale_value = 2000,
+        patch_size=1024,
+        border=47):
 
     models = {}
-
     for i, path in enumerate(checkpoint_path):
         model = network.TinyUNet()
         checkpoint = torch.load(path, map_location=device)
@@ -69,60 +72,78 @@ def apply_model_on_geotiff(
         model.eval()
         models[f"model_{i + 1}"] = model
 
+    img = rasterio.open(geotiff_path, tiled=True, blockxsize=256, blockysize=256)
+    h, w = img.height, img.width
+    stride = patch_size - 2 * border
+    valid_size = stride
+    offsets = get_patch_offsets(w, h, stride)
 
-    with rasterio.open(geotiff_path) as src:
-        image = src.read(1).astype(np.float32) / rescale_value
-        image = np.expand_dims(image, 0)
-        profile = src.profile
+    big_window = Window(0, 0, w, h)
+    output_mask = np.zeros((h, w), dtype=np.uint8)
 
-    image = torch.from_numpy(image)
-    if image.ndim == 3:
-        image = image.unsqueeze(0)
-    _, c, h, w = image.shape
+    # loop through patch size and predict
+    for i, (col_off, row_off) in tqdm(enumerate(offsets)):
+        # prepare the patch
+        patch_window = Window(col_off=col_off,
+                              row_off=row_off,
+                              width=patch_size,
+                              height=patch_size).intersection(big_window)
+        patch_img = img.read([1], window=patch_window).astype(np.float32) / rescale_value
 
-    with torch.no_grad():
-        patch = image.to(device)
-        pred = ensemble_union_predict(models, patch)[0, 0]
+        current_h, current_w = patch_img.shape[1:]
+        padded_patch = np.zeros((1, patch_size, patch_size), dtype=np.float32)
+        padded_patch[:, :current_h, :current_w] = patch_img
+        patch = torch.from_numpy(padded_patch)
+        patch = patch.unsqueeze(0).to(device)
 
-    output_mask = pred.cpu().numpy()
+        # predict using retrained models
+        if len(checkpoint_path) > 1:
+            pred = ensemble_union_predict(models, patch)
+        else:
+            model = models['model_1']
+            logits = model(patch)
+            probs = torch.sigmoid(logits)
+            pred = (probs > 0.5).to(torch.uint8)
+
+        # replace in the output mask
+        pred = pred.squeeze().cpu().numpy()
+        valid_h = min(valid_size, h - (row_off + border))
+        valid_w = min(valid_size, w - (col_off + border))
+
+        start_row = row_off + border
+        start_col = col_off + border
+        end_row = start_row + valid_h
+        end_col = start_col + valid_w
+
+        output_mask[
+            start_row:end_row,
+            start_col:end_col
+        ] = pred[:valid_h, :valid_w]
+
+
+    profile = img.profile()
     profile.update(count=1, dtype=rasterio.uint8)
+    img.close()
 
     with rasterio.open(output_path, "w", **profile) as dst:
-        dst.write(output_mask.astype(np.uint8), 1)
+        dst.write(output_mask, 1)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Batch inference on GeoTIFF directory")
-    parser.add_argument("--keywords", type=str, help="Keyword used to save the model")
-    parser.add_argument("--input_dir", type=str, help="Directory with input GeoTIFFs",
-                        default="data/data/testdata/images")
-    parser.add_argument("--output_dir", type=str, help="Directory with input GeoTIFFs",
-                        default="data/predictions/")
-    parser.add_argument("--patch_size", type=int, default=512)
+class ArcticPredict:
+    def __init__(self, **kwargs):
+        self.images = sorted(glob(os.path.join(kwargs['image_dir'], '*.tif')))
+        self.pretrained_model = kwargs['pretrained_model']
+        self.ensemble = kwargs['ensemble']
+        self.set_name = kwargs['set_name']
+        self.out_dir = kwargs['out_dir']
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    args = parser.parse_args()
+    def run(self):
 
-    output_dir = os.path.join(args.output_dir, f'pred_{keywords[0]}')
-    checkpoint = [f"./runs/{i}/best_precision.pth" for i in keywords]
-
-    device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    os.makedirs(output_dir, exist_ok=True)
-
-    tif_files = [f for f in os.listdir(args.input_dir) if f.lower().endswith(".tif")]
-
-    for fname in tqdm(tif_files):
-        in_path = os.path.join(args.input_dir, fname)
-        out_path = os.path.join(output_dir, fname)
-
-        apply_model_on_geotiff(
-            geotiff_path=in_path,
-            checkpoint_path = checkpoint,
-            output_path=out_path,
-            patch_size=args.patch_size,
-            device=device
-        )
+        for image_path in self.images:
+            print(f"Processing {image_path}")
+            output_path = os.path.join(self.out_dir, os.path.basename(image_path))
+            apply_model_on_geotiff(image_path, self.pretrained_model, output_path, device=self.device)
+            print(f'Finished processing and saved to {output_path}')
 
 
-if __name__ == "__main__":
-    main()
