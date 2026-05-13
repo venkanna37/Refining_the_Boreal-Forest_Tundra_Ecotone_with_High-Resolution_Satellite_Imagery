@@ -114,14 +114,19 @@ class Training:
             image, mask = batch[0].to(self.device), batch[1].to(self.device)
 
             # manually remove 47 pixel boundary from label mask
-            mask = mask[:, :, 47:-47, 47:-47]  #fixme make it automatic finding border pixels
+            mask = mask[:, :, 47:-47, 47:-47]  #fixme if border size changes
 
             if is_train:
-
                 mask = (mask > 0.5).long()
-                y_w, y_w2 = mask[:, [1]], mask[:, [0]]
-                y_w = torch.where(y_w==1, self.boundary_weight, 1)
+                y_w = mask[:, [1]]
                 mask = mask[:, [0]]
+                y_w = torch.where(y_w==1, self.boundary_weight, 1)
+
+                # create index for season
+                seasons = [filename.split('_')[0] for filename in batch[2]]
+                seasons = [False if season == 'spring' else True for season in seasons]
+                y_w_ones = torch.ones_like(y_w)
+                y_w[seasons] = y_w_ones[seasons]
 
                 pred = model(image)
 

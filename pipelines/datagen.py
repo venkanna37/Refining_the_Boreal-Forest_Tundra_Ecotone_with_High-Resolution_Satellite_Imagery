@@ -54,6 +54,7 @@ class Datagen:
 
         image = torch.from_numpy(x).float()
         label = torch.from_numpy(y).long()
+        filename = os.path.basename(self.image_paths[index])
 
         # random crop of image and annotations
         if self.set_name == 'train' and self.patch_size != 512:
@@ -68,5 +69,5 @@ class Datagen:
             elif self.stretch_setting == 2:
                 image = image * np.random.uniform(0.5, 2.0)
 
-        return image, label
+        return image, label, filename
 
