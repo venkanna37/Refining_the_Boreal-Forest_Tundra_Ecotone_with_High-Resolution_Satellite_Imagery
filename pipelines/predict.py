@@ -82,7 +82,8 @@ def apply_model_on_geotiff(
     output_mask = np.zeros((h, w), dtype=np.uint8)
 
     # loop through patch size and predict
-    for i, (col_off, row_off) in tqdm(enumerate(offsets)):
+    for i, (col_off, row_off) in enumerate(
+            tqdm(offsets, desc="Predicting patches")):
         # prepare the patch
         patch_window = Window(col_off=col_off,
                               row_off=row_off,
@@ -121,8 +122,14 @@ def apply_model_on_geotiff(
         ] = pred[:valid_h, :valid_w]
 
 
-    profile = img.profile()
-    profile.update(count=1, dtype=rasterio.uint8)
+    profile = img.profile.copy()
+    profile.update(count=1,
+                   dtype=rasterio.uint8,
+                   compress='deflate',
+                   tiled=True,
+                   BIGTIFF='YES',
+                   nodata=0
+                   )
     img.close()
 
     with rasterio.open(output_path, "w", **profile) as dst:
@@ -136,6 +143,7 @@ class ArcticPredict:
         self.ensemble = kwargs['ensemble']
         self.set_name = kwargs['set_name']
         self.out_dir = kwargs['out_dir']
+        self.patch_size = kwargs['patch_size']
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def run(self):
@@ -143,7 +151,11 @@ class ArcticPredict:
         for image_path in self.images:
             print(f"Processing {image_path}")
             output_path = os.path.join(self.out_dir, os.path.basename(image_path))
-            apply_model_on_geotiff(image_path, self.pretrained_model, output_path, device=self.device)
+            apply_model_on_geotiff(geotiff_path=image_path,
+                                   checkpoint_path=self.pretrained_model,
+                                   output_path=output_path,
+                                   device=self.device,
+                                   patch_size=self.patch_size)
             print(f'Finished processing and saved to {output_path}')
 
 

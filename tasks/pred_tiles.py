@@ -13,6 +13,7 @@ if __name__ == '__main__':
     parser.add_argument("--keyword", type=str, default='ls2')
     parser.add_argument("--server", type=str, default='lumi')
     parser.add_argument("--set_name", type=str, default='mosaics')
+    parser.add_argument("--patch_size", type=int, default=1024)
     parser.add_argument("--wt_file", type=str, default='best_f1')
     parser.add_argument("--ensemble",
                         action=argparse.BooleanOptionalAction, default=False)
