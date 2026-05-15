@@ -78,7 +78,7 @@ def apply_model_on_geotiff(
         output_path,
         device='cpu',
         rescale_value = 2000,
-        patch_size=1024,
+        patch_size=None,
         border=47,
         ensemble_mode='majority'):
 
@@ -91,65 +91,80 @@ def apply_model_on_geotiff(
         model.eval()
         models[f"model_{i + 1}"] = model
 
-    img = rasterio.open(geotiff_path, tiled=True, blockxsize=256, blockysize=256)
-    h, w = img.height, img.width
-    stride = patch_size - 2 * border
-    valid_size = stride
-    offsets = get_patch_offsets(w, h, stride)
+    if patch_size is not None:
+        img = rasterio.open(geotiff_path, tiled=True, blockxsize=256, blockysize=256)
+        profile = img.profile.copy()
+        h, w = img.height, img.width
+        stride = patch_size - 2 * border
+        valid_size = stride
+        offsets = get_patch_offsets(w, h, stride)
 
-    big_window = Window(0, 0, w, h)
-    output_mask = np.zeros((h, w), dtype=np.uint8)
+        big_window = Window(0, 0, w, h)
+        output_mask = np.zeros((h, w), dtype=np.uint8)
 
-    # loop through patch size and predict
-    for i, (col_off, row_off) in enumerate(
-            tqdm(offsets, desc="Predicting patches")):
-        # prepare the patch
-        patch_window = Window(col_off=col_off,
-                              row_off=row_off,
-                              width=patch_size,
-                              height=patch_size).intersection(big_window)
-        patch_img = img.read([1], window=patch_window).astype(np.float32) / rescale_value
+        # loop through patch size and predict
+        for i, (col_off, row_off) in enumerate(
+                tqdm(offsets, desc="Predicting patches")):
+            # prepare the patch
+            patch_window = Window(col_off=col_off,
+                                  row_off=row_off,
+                                  width=patch_size,
+                                  height=patch_size).intersection(big_window)
+            patch_img = img.read([1], window=patch_window).astype(np.float32) / rescale_value
 
-        current_h, current_w = patch_img.shape[1:]
-        padded_patch = np.zeros((1, patch_size, patch_size), dtype=np.float32)
-        padded_patch[:, :current_h, :current_w] = patch_img
-        patch = torch.from_numpy(padded_patch)
+            current_h, current_w = patch_img.shape[1:]
+            padded_patch = np.zeros((1, patch_size, patch_size), dtype=np.float32)
+            padded_patch[:, :current_h, :current_w] = patch_img
+            patch = torch.from_numpy(padded_patch)
+            patch = patch.unsqueeze(0).to(device)
+
+            # predict using retrained models
+            if len(checkpoint_path) > 1:
+                pred = ensemble_union_predict(models, patch, ensemble_mode=ensemble_mode)
+            else:
+                model = models['model_1']
+                logits = model(patch)
+                probs = torch.sigmoid(logits)
+                pred = (probs > 0.5).to(torch.uint8)
+
+            # replace in the output mask
+            pred = pred.squeeze().cpu().numpy()
+            valid_h = min(valid_size, h - (row_off + border))
+            valid_w = min(valid_size, w - (col_off + border))
+
+            start_row = row_off + border
+            start_col = col_off + border
+            end_row = start_row + valid_h
+            end_col = start_col + valid_w
+
+            output_mask[
+                start_row:end_row,
+                start_col:end_col
+            ] = pred[:valid_h, :valid_w]
+        img.close()
+    else:
+
+        with rasterio.open(geotiff_path) as src:
+            patch_img = src.read([1]).astype(np.float32) / rescale_value
+            profile = src.profile.copy()
+            output_mask = np.zeros((src.height, src.width), dtype=np.uint8)
+        patch = torch.from_numpy(patch_img)
         patch = patch.unsqueeze(0).to(device)
-
-        # predict using retrained models
         if len(checkpoint_path) > 1:
             pred = ensemble_union_predict(models, patch, ensemble_mode=ensemble_mode)
         else:
-            model = models['model_1']
-            logits = model(patch)
-            probs = torch.sigmoid(logits)
-            pred = (probs > 0.5).to(torch.uint8)
-
-        # replace in the output mask
+            raise NotImplementedError
         pred = pred.squeeze().cpu().numpy()
-        valid_h = min(valid_size, h - (row_off + border))
-        valid_w = min(valid_size, w - (col_off + border))
+        output_mask[47:-47, 47:-47] = pred
 
-        start_row = row_off + border
-        start_col = col_off + border
-        end_row = start_row + valid_h
-        end_col = start_col + valid_w
-
-        output_mask[
-            start_row:end_row,
-            start_col:end_col
-        ] = pred[:valid_h, :valid_w]
-
-
-    profile = img.profile.copy()
     profile.update(count=1,
                    dtype=rasterio.uint8,
                    compress='deflate',
-                   tiled=True,
-                   BIGTIFF='YES',
+                   # tiled=True,
+                   # BIGTIFF='YES',
                    nodata=0
                    )
-    img.close()
+
 
     with rasterio.open(output_path, "w", **profile) as dst:
         dst.write(output_mask, 1)
