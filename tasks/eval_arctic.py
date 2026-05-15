@@ -14,6 +14,7 @@ if __name__ == '__main__':
     parser.add_argument("--server", type=str, default='lumi')
     parser.add_argument("--set_name", type=str, default='test')
     parser.add_argument("--wt_file", type=str, default='best_f1')
+    parser.add_argument("--ensemble_mode", type=str, default='majority')
     parser.add_argument("--data_dir", type=str,
                         default='../data/')
     parser.add_argument("--ensemble",

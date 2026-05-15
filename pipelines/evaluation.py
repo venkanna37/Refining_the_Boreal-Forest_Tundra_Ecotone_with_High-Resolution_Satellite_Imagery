@@ -38,14 +38,32 @@ def ensemble_union_predict(models,
         individual_masks.append(probs)
 
     stacked = torch.stack(individual_masks, dim=0)
-    # MAJORITY
     if ensemble_mode == "majority":
+        # MAJORITY
         mask = torch.mean(stacked, dim=0)
         mask = (mask > 0.5).to(torch.uint8)
     elif ensemble_mode == "intersection":
         # INTERSECTION
         mask = stacked > 0.5
         mask = torch.all(mask, dim=0).to(torch.uint8)
+    elif ensemble_mode == "atleast1":
+        # ATLEAST ONE
+        mask = stacked > 0.5
+        mask = (torch.sum(mask, dim=0) >= 1).to(torch.uint8)
+    elif ensemble_mode == "atleast2":
+        # ATLEAST TWO
+        mask = stacked > 0.5
+        mask = (torch.sum(mask, dim=0) >= 2).to(torch.uint8)
+    elif ensemble_mode == "atleast3":
+        # ATLEAST THREEE
+        mask = stacked > 0.5
+        mask = (torch.sum(mask, dim=0) >= 3).to(torch.uint8)
+    elif ensemble_mode == "atleast4":
+        # ATLEAST FOUR
+        mask = stacked > 0.5
+        mask = (torch.sum(mask, dim=0) >= 4).to(torch.uint8)
+    else:
+        raise NotImplementedError(f"ensemble_mode={ensemble_mode} not implemented")
 
     return mask
 
@@ -110,7 +128,8 @@ class ArcticEvaluation:
             # get prediction mask
             y_pred = apply_model_on_geotiff(image_path,
                                             self.pretrained_model,
-                                            device=self.device)
+                                            device=self.device,
+                                            ensemble_mode=self.ensemble_mode)
 
             # get gound truth mask
             with rasterio.open(label_path) as src:
