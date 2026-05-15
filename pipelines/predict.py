@@ -32,14 +32,32 @@ def ensemble_union_predict(models,
         individual_masks.append(probs)
 
     stacked = torch.stack(individual_masks, dim=0)
-    # MAJORITY
     if ensemble_mode == "majority":
+        # MAJORITY
         mask = torch.mean(stacked, dim=0)
         mask = (mask > 0.5).to(torch.uint8)
     elif ensemble_mode == "intersection":
         # INTERSECTION
         mask = stacked > 0.5
         mask = torch.all(mask, dim=0).to(torch.uint8)
+    elif ensemble_mode == "atleast1":
+        # ATLEAST ONE
+        mask = stacked > 0.5
+        mask = (torch.sum(mask, dim=0) >= 1).to(torch.uint8)
+    elif ensemble_mode == "atleast2":
+        # ATLEAST TWO
+        mask = stacked > 0.5
+        mask = (torch.sum(mask, dim=0) >= 2).to(torch.uint8)
+    elif ensemble_mode == "atleast3":
+        # ATLEAST THREEE
+        mask = stacked > 0.5
+        mask = (torch.sum(mask, dim=0) >= 3).to(torch.uint8)
+    elif ensemble_mode == "atleast4":
+        # ATLEAST FOUR
+        mask = stacked > 0.5
+        mask = (torch.sum(mask, dim=0) >= 4).to(torch.uint8)
+    else:
+        raise NotImplementedError(f"ensemble_mode={ensemble_mode} not implemented")
 
     return mask
 
@@ -61,7 +79,8 @@ def apply_model_on_geotiff(
         device='cpu',
         rescale_value = 2000,
         patch_size=1024,
-        border=47):
+        border=47,
+        ensemble_mode='majority'):
 
     models = {}
     for i, path in enumerate(checkpoint_path):
@@ -99,7 +118,7 @@ def apply_model_on_geotiff(
 
         # predict using retrained models
         if len(checkpoint_path) > 1:
-            pred = ensemble_union_predict(models, patch)
+            pred = ensemble_union_predict(models, patch, ensemble_mode=ensemble_mode)
         else:
             model = models['model_1']
             logits = model(patch)
@@ -144,6 +163,7 @@ class ArcticPredict:
         self.set_name = kwargs['set_name']
         self.out_dir = kwargs['out_dir']
         self.patch_size = kwargs['patch_size']
+        self.ensemble_mode = kwargs['ensemble_mode']
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def run(self):
@@ -155,7 +175,8 @@ class ArcticPredict:
                                    checkpoint_path=self.pretrained_model,
                                    output_path=output_path,
                                    device=self.device,
-                                   patch_size=self.patch_size)
+                                   patch_size=self.patch_size,
+                                   ensemble_mode=self.ensemble_mode)
             print(f'Finished processing and saved to {output_path}')
 
 

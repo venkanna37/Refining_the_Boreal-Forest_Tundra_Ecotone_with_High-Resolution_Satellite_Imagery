@@ -13,6 +13,7 @@ if __name__ == '__main__':
     parser.add_argument("--keyword", type=str, default='ls2')
     parser.add_argument("--server", type=str, default='lumi')
     parser.add_argument("--set_name", type=str, default='mosaics')
+    parser.add_argument("--ensemble_mode", type=str, default='majority')
     parser.add_argument("--patch_size", type=int, default=1024)
     parser.add_argument("--wt_file", type=str, default='best_f1')
     parser.add_argument("--ensemble",
@@ -25,9 +26,10 @@ if __name__ == '__main__':
 
     if params['server'] == 'lumi':
         run_dir = "/scratch/project_465002698/venky/projects/arctic/runs"
-        params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/mosaics/'
+        # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/mosaics/'
+        params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/image/'
         base_dir = '/scratch/project_465002698/venky/projects/arctic/predictions/'
-        params['out_dir'] = os.path.join(base_dir, params['keyword'])
+        params['out_dir'] = os.path.join(base_dir, f"prenorm_{params['keyword']}_{params['ensemble_mode']}")
 
 
     elif params['server'] == 'local':
