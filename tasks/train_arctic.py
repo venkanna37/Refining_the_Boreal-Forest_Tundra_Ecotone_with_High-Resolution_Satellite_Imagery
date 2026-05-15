@@ -28,7 +28,6 @@ if __name__ == '__main__':
 
     # visualisation params
     parser.add_argument("--use_wb", action=argparse.BooleanOptionalAction, default=False)
-
     params = vars(parser.parse_args())
     params['data_dir'] = f'../data/geofolds/fold{params["data_fold"]}/'
     if params['server'] == 'lumi':

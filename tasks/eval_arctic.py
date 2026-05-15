@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     params['image_dir'] = os.path.join(params['data_dir'], params['set_name'], 'images')
     params['label_dir'] = os.path.join(params['data_dir'], params['set_name'], 'labels')
-    params['results_csv'] = '../documents/results.csv'
+    params['results_csv'] = '../documents/results.csv'  #fixme not using this for now
 
     if params['server'] == 'lumi':
         run_dir = "/scratch/project_465002698/venky/projects/arctic/runs"

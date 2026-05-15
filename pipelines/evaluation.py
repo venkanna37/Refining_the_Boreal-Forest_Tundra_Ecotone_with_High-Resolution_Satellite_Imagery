@@ -55,7 +55,8 @@ def apply_model_on_geotiff(
         geotiff_path,
         checkpoint_path,
         device='cpu',
-        rescale_value = 2000):
+        rescale_value = 2000,
+        ensemble_mode='majority'):
 
     models = {}
     for i, path in enumerate(checkpoint_path):
@@ -78,7 +79,7 @@ def apply_model_on_geotiff(
     with torch.no_grad():
         patch = image.to(device)
         if len(checkpoint_path) > 1:
-            pred = ensemble_union_predict(models, patch)
+            pred = ensemble_union_predict(models, patch, ensemble_mode)
         else:
             model = models['model_1']
             logits = model(patch)
@@ -94,6 +95,7 @@ class ArcticEvaluation:
         self.pretrained_model = kwargs['pretrained_model']
         self.ensemble = kwargs['ensemble']
         self.set_name = kwargs['set_name']
+        self.ensemble_mode = kwargs['ensemble_mode']
         self.slice = 7 if self.set_name == 'test' else 24
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

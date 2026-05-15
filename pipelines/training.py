@@ -185,9 +185,10 @@ class Training:
     def train(self):
         # Setup data
         train_set = datagen.Datagen(self.data_dir,
-                                    set_name="train",
+                                    set_name="both", #fixme
                                     patch_size=self.patch_size,
-                                    stretch_setting=self.stretch_setting)
+                                    stretch_setting=self.stretch_setting,
+                                    random_crop=True)
         train_loader = DataLoader(train_set,
                                   self.batch_size,
                                   drop_last=True,
@@ -195,7 +196,7 @@ class Training:
                                   num_workers=self.num_workers)
 
         val_set = datagen.Datagen(self.data_dir,
-                                  set_name="val",
+                                  set_name="both", #fixme
                                   patch_size=512)
         val_loader = DataLoader(val_set,
                                 min(self.batch_size, 24),

@@ -18,13 +18,20 @@ class Datagen:
                  set_name='train',
                  rescale_value=2000,
                  patch_size=256,
-                 stretch_setting=1):
+                 stretch_setting=2,
+                 random_crop=False):
 
         self.data_dir = data_dir
         self.set_name = set_name
         self.rescale_value = rescale_value
+        self.random_crop = random_crop
         self.image_paths = sorted(glob(os.path.join(self.data_dir, self.set_name, "images/*.tif")))
         self.label_paths = sorted(glob(os.path.join(self.data_dir, self.set_name, "labels/*.tif")))
+        if self.set_name == 'both':
+            self.image_paths = sorted(glob(os.path.join(self.data_dir, 'train', "images/*.tif")))
+            self.label_paths = sorted(glob(os.path.join(self.data_dir, 'train', "labels/*.tif")))
+            self.image_paths += sorted(glob(os.path.join(self.data_dir, 'val', "images/*.tif")))
+            self.label_paths += sorted(glob(os.path.join(self.data_dir, 'val', "labels/*.tif")))
         self.patch_size = patch_size
         self.stretch_setting = stretch_setting
 
@@ -57,7 +64,7 @@ class Datagen:
         filename = os.path.basename(self.image_paths[index])
 
         # random crop of image and annotations
-        if self.set_name == 'train' and self.patch_size != 512:
+        if self.random_crop and self.patch_size != 512:
             cx = np.random.randint(0, image.shape[1] - self.patch_size)
             cy = np.random.randint(0, image.shape[2] - self.patch_size)
             image = image[:, cy:cy + self.patch_size, cx:cx + self.patch_size]
