@@ -9,7 +9,7 @@ from shapely.geometry import box
 
 # Paths
 sh_dir = "/home/venky/Documents/projects/data/arctic/new_area/new_location.shp"
-raster_path = "/home/venky/Documents/projects/data/arctic/mosaics/ArcticAOI6_6931_GE01-QB02-WV01-WV02-WV03_P_232_429_mosaic.tif"
+raster_path = "/home/venky/Documents/projects/data/arctic/image/ArcticAOI6_6931_GE01-QB02-WV01-WV02-WV03_P_232_429_mosaic.tif"
 out_dir = "/home/venky/Documents/projects/arctic/data/new_location"
 
 # Load vector data
@@ -68,7 +68,8 @@ with rasterio.open(raster_path) as src:
                 if iou < 0.8:
                     continue
                # Save image
-                image_path = os.path.join(out_dir, 'images', f"summer_{image_id}_{j}_{k}.tif")
+                filename =f"summer_{image_id}_{j}_{k}.tif"
+                image_path = os.path.join(out_dir, 'images', filename)
                 meta = src.meta.copy()
                 meta.update({
                     "driver": "GTiff",
@@ -81,14 +82,15 @@ with rasterio.open(raster_path) as src:
 
                 # Save label (placeholder)
                 label = np.zeros((1, 512, 512), dtype=np.uint8)
-                label_path = os.path.join(out_dir, 'labels', f"summer_{image_id}_{j}_{k}.tif")
+                label_path = os.path.join(out_dir, 'labels', filename)
                 with rasterio.open(label_path, "w", **meta) as dst:
                     dst.write(label)
 
                 # Store bbox metadata
                 bbox_geoms.append({
-                    "image_id": image_id,
-                    "geometry": patch_bbox
+                    "image": filename,
+                    "geometry": patch_bbox,
+                    'max_value': patch.max().item()
                 })
 
         image_id += 1
