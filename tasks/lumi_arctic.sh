@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=ArcticAll
+#SBATCH --job-name=ArcticNew
 #SBATCH --account=project_465002698
 #SBATCH --nodes=1
-#SBATCH --gpus-per-node=3
-#SBATCH --ntasks-per-node=3
+#SBATCH --gpus-per-node=5
+#SBATCH --ntasks-per-node=5
 #SBATCH --gpus-per-task=1
-#SBATCH --mem=96G
-#SBATCH --partition=small-g
+#SBATCH --mem=0
+#SBATCH --partition=standard-g
 #SBATCH --output=/scratch/project_465002698/venky/projects/arctic/out_files/%x_%j.out
 #SBATCH --error=/scratch/project_465002698/venky/projects/arctic/out_files/%x_%j.err
 #SBATCH --time=48:00:00
@@ -15,11 +15,11 @@ hostname
 rocm-smi
 echo $CUDA_VISIBLE_DEVICES
 
-ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword bw15_new_fold1 --use_wb --data_fold 1 --boundary_weight 15 &
-ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword bw15_new_fold2 --use_wb --data_fold 2 --boundary_weight 15 &
-ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword bw15_new_fold3 --use_wb --data_fold 3 --boundary_weight 15 &
-ROCR_VISIBLE_DEVICES=3 python train_arctic.py --keyword bw15_new_fold4 --use_wb --data_fold 4 --boundary_weight 15 &
-ROCR_VISIBLE_DEVICES=4 python train_arctic.py --keyword bw15_new_fold5 --use_wb --data_fold 5 --boundary_weight 15 &
+ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword bw15_new_fold1 --use_wb --data_fold 1 &
+ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword bw15_new_fold2 --use_wb --data_fold 2 &
+ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword bw15_new_fold3 --use_wb --data_fold 3 &
+ROCR_VISIBLE_DEVICES=3 python train_arctic.py --keyword bw15_new_fold4 --use_wb --data_fold 4 &
+ROCR_VISIBLE_DEVICES=4 python train_arctic.py --keyword bw15_new_fold5 --use_wb --data_fold 5 &
 wait
 
 #ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword Sbw10_all --use_wb --data_fold 1 --boundary_weight 10 &
