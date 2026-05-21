@@ -82,7 +82,6 @@ class Training:
         self.loss_function = kwargs.get('loss_function', 'tversky')
         self.alpha = kwargs.get('alpha', 0.5)
         self.runs_dir = kwargs.get('runs_dir', 'runs')
-        self.load_model = kwargs.get('load', None)  # not using for now
         self.checkpoints_dir = os.path.join(self.runs_dir, self.keyword)
         os.makedirs(self.checkpoints_dir, exist_ok=True)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -122,11 +121,11 @@ class Training:
                 mask = mask[:, [0]]
                 y_w = torch.where(y_w==1, self.boundary_weight, 1)
 
-                # create index for season
-                seasons = [filename.split('_')[0] for filename in batch[2]]
-                seasons = [False if season == 'spring' else True for season in seasons]
-                y_w_ones = torch.ones_like(y_w)
-                y_w[seasons] = y_w_ones[seasons]
+                # # create index for season
+                # seasons = [filename.split('_')[0] for filename in batch[2]]
+                # seasons = [False if season == 'spring' else True for season in seasons]
+                # y_w_ones = torch.ones_like(y_w)
+                # y_w[seasons] = y_w_ones[seasons]
 
                 pred = model(image)
 
@@ -185,7 +184,7 @@ class Training:
     def train(self):
         # Setup data
         train_set = datagen.Datagen(self.data_dir,
-                                    set_name="both", #fixme
+                                    set_name="train",
                                     patch_size=self.patch_size,
                                     stretch_setting=self.stretch_setting,
                                     random_crop=True)
@@ -196,7 +195,7 @@ class Training:
                                   num_workers=self.num_workers)
 
         val_set = datagen.Datagen(self.data_dir,
-                                  set_name="both", #fixme
+                                  set_name="val",
                                   patch_size=512)
         val_loader = DataLoader(val_set,
                                 min(self.batch_size, 24),
@@ -210,19 +209,12 @@ class Training:
         n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print('number of params:', n_params)
 
-        if self.load_model:
-            model.load_state_dict(torch.load(self.load_model, map_location=self.device)["model"])
-
         model.to(self.device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
-        # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5000, gamma=0.5)
 
         # Training loop
         print("Start training")
         best = {'precision': 0, 'recall': 0, 'f1': 0}
-
-        # Estimate mean and std if normalize
-        # mean_train, std_train = self.mean_nd_std()
 
         for epoch in range(self.epochs):
             train_results = self.run_epoch(model, train_loader, optimizer, is_train=True)

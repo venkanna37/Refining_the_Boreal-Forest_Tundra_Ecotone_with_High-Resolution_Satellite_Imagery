@@ -15,10 +15,17 @@ hostname
 rocm-smi
 echo $CUDA_VISIBLE_DEVICES
 
-ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword Sbw10_all --use_wb --data_fold 1 --boundary_weight 10 &
-ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword Sbw20_all --use_wb --data_fold 1 --boundary_weight 20 &
-ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword all --use_wb --data_fold 1 &
+ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword bw15_new_fold1 --use_wb --data_fold 1 --boundary_weight 15 &
+ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword bw15_new_fold2 --use_wb --data_fold 2 --boundary_weight 15 &
+ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword bw15_new_fold3 --use_wb --data_fold 3 --boundary_weight 15 &
+ROCR_VISIBLE_DEVICES=3 python train_arctic.py --keyword bw15_new_fold4 --use_wb --data_fold 4 --boundary_weight 15 &
+ROCR_VISIBLE_DEVICES=4 python train_arctic.py --keyword bw15_new_fold5 --use_wb --data_fold 5 --boundary_weight 15 &
 wait
+
+#ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword Sbw10_all --use_wb --data_fold 1 --boundary_weight 10 &
+#ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword Sbw20_all --use_wb --data_fold 1 --boundary_weight 20 &
+#ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword all --use_wb --data_fold 1 &
+#wait
 
 
 #ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword Sbw10_fold1 --use_wb --data_fold 1 --boundary_weight 10 &

@@ -27,23 +27,8 @@ class Datagen:
         self.random_crop = random_crop
         self.image_paths = sorted(glob(os.path.join(self.data_dir, self.set_name, "images/*.tif")))
         self.label_paths = sorted(glob(os.path.join(self.data_dir, self.set_name, "labels/*.tif")))
-        if self.set_name == 'both':
-            self.image_paths = sorted(glob(os.path.join(self.data_dir, 'train', "images/*.tif")))
-            self.label_paths = sorted(glob(os.path.join(self.data_dir, 'train', "labels/*.tif")))
-            self.image_paths += sorted(glob(os.path.join(self.data_dir, 'val', "images/*.tif")))
-            self.label_paths += sorted(glob(os.path.join(self.data_dir, 'val', "labels/*.tif")))
         self.patch_size = patch_size
         self.stretch_setting = stretch_setting
-
-        # augmentation chances
-        self.hflip_chance = 0.5
-        self.vflip_chance = 0.5
-        self.rotate_chance = 0.5
-        self.colorjitter_chance = 0.25
-        self.brightness_chance = 0.25
-        self.gaussblurr_chance = 0.10
-        self.gaussnoise_chance = 0.10
-        self.sharpness_chance = 0.10
 
     def __len__(self):
         return len(self.image_paths)
