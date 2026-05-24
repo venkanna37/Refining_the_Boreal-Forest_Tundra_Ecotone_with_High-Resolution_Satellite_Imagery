@@ -3,6 +3,7 @@ import torch
 import rasterio
 import numpy as np
 from glob import glob
+import torch.nn as nn
 from pipelines import network
 from torchmetrics.classification import BinaryStatScores
 
@@ -93,7 +94,7 @@ def apply_model_on_geotiff(
     if image.ndim == 3:
         image = image.unsqueeze(0)
     _, c, h, w = image.shape
-
+    # image = nn.ReflectionPad2d(47)(image)
     with torch.no_grad():
         patch = image.to(device)
         if len(checkpoint_path) > 1:
@@ -138,6 +139,7 @@ class ArcticEvaluation:
                 y_true = y_true[47:-47, 47:-47]
                 y_true = torch.from_numpy(y_true).to(self.device)
 
+            # y_pred = y_pred[1:-1, 1:-1] #fixme
             metrics.update(y_pred, y_true)
             if self.set_name == 'test':
                 individual_metrics.reset()

@@ -12,7 +12,6 @@ if __name__ == '__main__':
     # Parameters
     parser.add_argument("--keyword", type=str, default='ls2')
     parser.add_argument("--server", type=str, default='lumi')
-    parser.add_argument("--set_name", type=str, default='mosaics')
     parser.add_argument("--ensemble_mode", type=str, default='majority')
     parser.add_argument("--patch_size", type=int, default=None)
     parser.add_argument("--wt_file", type=str, default='best_f1')
@@ -20,24 +19,19 @@ if __name__ == '__main__':
                         action=argparse.BooleanOptionalAction, default=False)
     params = vars(parser.parse_args())
 
-    # if params['set_name'] in ['train', 'val', 'test']:
-    #     params['image_dir'] = os.path.join(params['data_dir'], params['set_name'], 'images')
-    # elif params['set_name'] == 'mosaics':
-
     if params['server'] == 'lumi':
         run_dir = "/scratch/project_465002698/venky/projects/arctic/runs"
-        # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/mosaics/'
-        params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/image/'
-        params['image_dir'] = '../data/test/images/'
+        # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/mosaics/'  # Corrected mosaics
+        params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/image/'    # Raw mosaics
         base_dir = '/scratch/project_465002698/venky/projects/arctic/predictions/'
-        params['out_dir'] = os.path.join(base_dir, f"test_{params['keyword']}_{params['ensemble_mode']}")
+        params['out_dir'] = os.path.join(base_dir, f"image_{params['keyword']}_{params['ensemble_mode']}")
 
 
     elif params['server'] == 'local':
         run_dir = '../runs/'
         base_dir = '/home/venky/Documents/projects/data/arctic/venky_predictions/'
-        params['out_dir'] = os.path.join(base_dir, params['keyword'])
-        params['image_dir'] = '../data/geofolds/test/images/'
+        params['image_dir'] = '../data/test/images/'
+        params['out_dir'] = os.path.join(base_dir, f"test_{params['keyword']}_{params['ensemble_mode']}")
     else:
         raise FileNotFoundError
 

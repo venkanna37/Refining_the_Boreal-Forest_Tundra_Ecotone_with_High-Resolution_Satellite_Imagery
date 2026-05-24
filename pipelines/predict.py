@@ -4,10 +4,11 @@ import rasterio
 import numpy as np
 from glob import glob
 from tqdm import tqdm
+import torch.nn as nn
 from pipelines import network
 from itertools import product
 from rasterio.windows import Window
-
+import matplotlib.pyplot as plt
 
 # function that take dictionary of models and gives the final mask
 @torch.no_grad()
@@ -36,6 +37,7 @@ def ensemble_union_predict(models,
         # MAJORITY
         mask = torch.mean(stacked, dim=0)
         mask = (mask > 0.5).to(torch.uint8)
+        # mask = (mask * 100).to(torch.uint8)
     elif ensemble_mode == "intersection":
         # INTERSECTION
         mask = stacked > 0.5
@@ -96,8 +98,11 @@ def apply_model_on_geotiff(
         profile = img.profile.copy()
         h, w = img.height, img.width
         stride = patch_size - 2 * border
-        valid_size = stride
         offsets = get_patch_offsets(w, h, stride)
+
+        # offset stats for identifying border patch
+        max_col = max(c for c, r in offsets)
+        max_row = max(r for c, r in offsets)
 
         big_window = Window(0, 0, w, h)
         output_mask = np.zeros((h, w), dtype=np.uint8)
@@ -111,29 +116,59 @@ def apply_model_on_geotiff(
                                   width=patch_size,
                                   height=patch_size).intersection(big_window)
             patch_img = img.read([1], window=patch_window).astype(np.float32) / rescale_value
-
             current_h, current_w = patch_img.shape[1:]
+            print(current_h, current_w)
             padded_patch = np.zeros((1, patch_size, patch_size), dtype=np.float32)
             padded_patch[:, :current_h, :current_w] = patch_img
+
             patch = torch.from_numpy(padded_patch)
             patch = patch.unsqueeze(0).to(device)
 
+            # use reflection padding if the patch is at border
+            if row_off in [0, max_row] or col_off in [0, max_col]:
+                patch = nn.ReflectionPad2d(47)(patch)
+                plt.imshow(patch.numpy()[0][0])
+                plt.show()
             # predict using retrained models
             if len(checkpoint_path) > 1:
                 pred = ensemble_union_predict(models, patch, ensemble_mode=ensemble_mode)
             else:
                 model = models['model_1']
                 logits = model(patch)
-                probs = torch.sigmoid(logits)
-                pred = (probs > 0.5).to(torch.uint8)
+                probs = torch.sigmoid(logits) * 100
+                pred = probs.to(torch.uint8)
 
             # replace in the output mask
             pred = pred.squeeze().cpu().numpy()
-            valid_h = min(valid_size, h - (row_off + border))
-            valid_w = min(valid_size, w - (col_off + border))
-
+            valid_h = current_h - (2 * border)
+            valid_w = current_w - (2 * border)
             start_row = row_off + border
             start_col = col_off + border
+
+            # deal with border patches
+            if row_off in [0, max_row] or col_off in [0, max_col]:
+                pred = pred[1:-1, 1:-1]
+                plt.imshow(pred)
+                plt.show()
+                p_row_start, p_row_end, p_col_start, p_col_end = 47, -47, 47, -47
+                # fixme this condition assuming there is atleast one patch without touching border
+                if col_off == 0:
+                    valid_w += border
+                    start_col -= border
+                    p_col_start = 0
+                if col_off == max_col:
+                    valid_w += border
+                    p_col_end = -1
+                if row_off == 0:
+                    valid_h += border
+                    start_row -= border
+                    p_row_start = 0
+                if row_off == max_row:
+                    valid_h += border
+                    p_row_end = -1
+                print(p_row_start, p_row_end, p_col_start, p_col_end)
+                pred = pred[p_row_start:p_row_end, p_col_start:p_col_end]
+
             end_row = start_row + valid_h
             end_col = start_col + valid_w
 
@@ -141,27 +176,31 @@ def apply_model_on_geotiff(
                 start_row:end_row,
                 start_col:end_col
             ] = pred[:valid_h, :valid_w]
+            plt.imshow(output_mask)
+            plt.show()
         img.close()
     else:
 
         with rasterio.open(geotiff_path) as src:
             patch_img = src.read([1]).astype(np.float32) / rescale_value
             profile = src.profile.copy()
-            output_mask = np.zeros((src.height, src.width), dtype=np.uint8)
+            # output_mask = np.zeros((src.height, src.width), dtype=np.uint8)
         patch = torch.from_numpy(patch_img)
+        patch = nn.ReflectionPad2d(47)(patch)
         patch = patch.unsqueeze(0).to(device)
         if len(checkpoint_path) > 1:
             pred = ensemble_union_predict(models, patch, ensemble_mode=ensemble_mode)
         else:
             raise NotImplementedError
         pred = pred.squeeze().cpu().numpy()
-        output_mask[47:-47, 47:-47] = pred
+        # output_mask[47:-47, 47:-47] = pred
+        output_mask = pred[1:-1, 1:-1]
 
     profile.update(count=1,
                    dtype=rasterio.uint8,
                    compress='deflate',
-                   # tiled=True,
-                   # BIGTIFF='YES',
+                   tiled=True,
+                   BIGTIFF='YES',
                    nodata=0
                    )
 
@@ -175,14 +214,12 @@ class ArcticPredict:
         self.images = sorted(glob(os.path.join(kwargs['image_dir'], '*.tif')))
         self.pretrained_model = kwargs['pretrained_model']
         self.ensemble = kwargs['ensemble']
-        self.set_name = kwargs['set_name']
         self.out_dir = kwargs['out_dir']
         self.patch_size = kwargs['patch_size']
         self.ensemble_mode = kwargs['ensemble_mode']
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def run(self):
-
         for image_path in self.images:
             print(f"Processing {image_path}")
             output_path = os.path.join(self.out_dir, os.path.basename(image_path))
