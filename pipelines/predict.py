@@ -8,7 +8,7 @@ import torch.nn as nn
 from pipelines import network
 from itertools import product
 from rasterio.windows import Window
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 # function that take dictionary of models and gives the final mask
 @torch.no_grad()
@@ -117,7 +117,6 @@ def apply_model_on_geotiff(
                                   height=patch_size).intersection(big_window)
             patch_img = img.read([1], window=patch_window).astype(np.float32) / rescale_value
             current_h, current_w = patch_img.shape[1:]
-            print(current_h, current_w)
             padded_patch = np.zeros((1, patch_size, patch_size), dtype=np.float32)
             padded_patch[:, :current_h, :current_w] = patch_img
 
@@ -127,8 +126,6 @@ def apply_model_on_geotiff(
             # use reflection padding if the patch is at border
             if row_off in [0, max_row] or col_off in [0, max_col]:
                 patch = nn.ReflectionPad2d(47)(patch)
-                plt.imshow(patch.numpy()[0][0])
-                plt.show()
             # predict using retrained models
             if len(checkpoint_path) > 1:
                 pred = ensemble_union_predict(models, patch, ensemble_mode=ensemble_mode)
@@ -148,8 +145,6 @@ def apply_model_on_geotiff(
             # deal with border patches
             if row_off in [0, max_row] or col_off in [0, max_col]:
                 pred = pred[1:-1, 1:-1]
-                plt.imshow(pred)
-                plt.show()
                 p_row_start, p_row_end, p_col_start, p_col_end = 47, -47, 47, -47
                 # fixme this condition assuming there is atleast one patch without touching border
                 if col_off == 0:
@@ -166,7 +161,6 @@ def apply_model_on_geotiff(
                 if row_off == max_row:
                     valid_h += border
                     p_row_end = -1
-                print(p_row_start, p_row_end, p_col_start, p_col_end)
                 pred = pred[p_row_start:p_row_end, p_col_start:p_col_end]
 
             end_row = start_row + valid_h
@@ -176,8 +170,6 @@ def apply_model_on_geotiff(
                 start_row:end_row,
                 start_col:end_col
             ] = pred[:valid_h, :valid_w]
-            plt.imshow(output_mask)
-            plt.show()
         img.close()
     else:
 
