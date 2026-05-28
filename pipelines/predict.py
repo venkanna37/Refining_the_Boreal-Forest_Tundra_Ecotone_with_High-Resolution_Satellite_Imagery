@@ -1,4 +1,5 @@
 import os
+import csv
 import torch
 import rasterio
 import numpy as np
@@ -211,17 +212,32 @@ class ArcticPredict:
         self.patch_size = kwargs['patch_size']
         self.ensemble_mode = kwargs['ensemble_mode']
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.csv_path = kwargs['csv_path']
 
     def run(self):
         for image_path in self.images:
             print(f"Processing {image_path}")
             output_path = os.path.join(self.out_dir, os.path.basename(image_path))
-            apply_model_on_geotiff(geotiff_path=image_path,
-                                   checkpoint_path=self.pretrained_model,
-                                   output_path=output_path,
-                                   device=self.device,
-                                   patch_size=self.patch_size,
-                                   ensemble_mode=self.ensemble_mode)
+            try:
+                apply_model_on_geotiff(geotiff_path=image_path,
+                                       checkpoint_path=self.pretrained_model,
+                                       output_path=output_path,
+                                       device=self.device,
+                                       patch_size=self.patch_size,
+                                       ensemble_mode=self.ensemble_mode)
+                status = 'success'
+            except Exception as e:
+                print(f"Failed to process {image_path}: {e}")
+                status = 'fail'
+
             print(f'Finished processing and saved to {output_path}')
+
+            # Append result to CSV after each image
+            file_exists = os.path.isfile(self.csv_path)
+            with open(self.csv_path, 'a', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=['image_path', 'status'])
+                if not file_exists:
+                    writer.writeheader()
+                writer.writerow({'image_path': image_path, 'status': status})
 
 

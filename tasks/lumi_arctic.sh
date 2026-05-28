@@ -1,26 +1,56 @@
 #!/bin/bash
-#SBATCH --job-name=ArcticNew
+#SBATCH --job-name=ArcPred3
 #SBATCH --account=project_465002698
 #SBATCH --nodes=1
-#SBATCH --gpus-per-node=5
-#SBATCH --ntasks-per-node=5
+#SBATCH --gpus-per-node=8
+#SBATCH --ntasks-per-node=8
 #SBATCH --gpus-per-task=1
 #SBATCH --mem=0
 #SBATCH --partition=standard-g
 #SBATCH --output=/scratch/project_465002698/venky/projects/arctic/out_files/%x_%j.out
 #SBATCH --error=/scratch/project_465002698/venky/projects/arctic/out_files/%x_%j.err
-#SBATCH --time=48:00:00
+#SBATCH --time=24:00:00
 
 hostname
 rocm-smi
 echo $CUDA_VISIBLE_DEVICES
 
-ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword bw15_new_fold1 --use_wb --data_fold 1 &
-ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword bw15_new_fold2 --use_wb --data_fold 2 &
-ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword bw15_new_fold3 --use_wb --data_fold 3 &
-ROCR_VISIBLE_DEVICES=3 python train_arctic.py --keyword bw15_new_fold4 --use_wb --data_fold 4 &
-ROCR_VISIBLE_DEVICES=4 python train_arctic.py --keyword bw15_new_fold5 --use_wb --data_fold 5 &
+#ROCR_VISIBLE_DEVICES=0 python pred_tiles.py --patch_size 4096 --chunk_id 0 &
+#ROCR_VISIBLE_DEVICES=1 python pred_tiles.py --patch_size 4096 --chunk_id 1 &
+#ROCR_VISIBLE_DEVICES=2 python pred_tiles.py --patch_size 4096 --chunk_id 2 &
+#ROCR_VISIBLE_DEVICES=3 python pred_tiles.py --patch_size 4096 --chunk_id 3 &
+#ROCR_VISIBLE_DEVICES=4 python pred_tiles.py --patch_size 4096 --chunk_id 4 &
+#ROCR_VISIBLE_DEVICES=5 python pred_tiles.py --patch_size 4096 --chunk_id 5 &
+#ROCR_VISIBLE_DEVICES=6 python pred_tiles.py --patch_size 4096 --chunk_id 6 &
+#ROCR_VISIBLE_DEVICES=7 python pred_tiles.py --patch_size 4096 --chunk_id 7 &
+#wait
+
+#ROCR_VISIBLE_DEVICES=0 python pred_tiles.py --patch_size 4096 --chunk_id 8 &
+#ROCR_VISIBLE_DEVICES=1 python pred_tiles.py --patch_size 4096 --chunk_id 9 &
+#ROCR_VISIBLE_DEVICES=2 python pred_tiles.py --patch_size 4096 --chunk_id 10 &
+#ROCR_VISIBLE_DEVICES=3 python pred_tiles.py --patch_size 4096 --chunk_id 11 &
+#ROCR_VISIBLE_DEVICES=4 python pred_tiles.py --patch_size 4096 --chunk_id 12 &
+#ROCR_VISIBLE_DEVICES=5 python pred_tiles.py --patch_size 4096 --chunk_id 13 &
+#ROCR_VISIBLE_DEVICES=6 python pred_tiles.py --patch_size 4096 --chunk_id 14 &
+#ROCR_VISIBLE_DEVICES=7 python pred_tiles.py --patch_size 4096 --chunk_id 15 &
+#wait
+
+ROCR_VISIBLE_DEVICES=0 python pred_tiles.py --patch_size 4096 --chunk_id 16 &
+ROCR_VISIBLE_DEVICES=1 python pred_tiles.py --patch_size 4096 --chunk_id 17 &
+ROCR_VISIBLE_DEVICES=2 python pred_tiles.py --patch_size 4096 --chunk_id 18 &
+ROCR_VISIBLE_DEVICES=3 python pred_tiles.py --patch_size 4096 --chunk_id 19 &
+ROCR_VISIBLE_DEVICES=4 python pred_tiles.py --patch_size 4096 --chunk_id 20 &
+ROCR_VISIBLE_DEVICES=5 python pred_tiles.py --patch_size 4096 --chunk_id 21 &
+ROCR_VISIBLE_DEVICES=6 python pred_tiles.py --patch_size 4096 --chunk_id 22 &
+ROCR_VISIBLE_DEVICES=7 python pred_tiles.py --patch_size 4096 --chunk_id 23 &
 wait
+
+#ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword bw15_new_fold1 --use_wb --data_fold 1 &
+#ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword bw15_new_fold2 --use_wb --data_fold 2 &
+#ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword bw15_new_fold3 --use_wb --data_fold 3 &
+#ROCR_VISIBLE_DEVICES=3 python train_arctic.py --keyword bw15_new_fold4 --use_wb --data_fold 4 &
+#ROCR_VISIBLE_DEVICES=4 python train_arctic.py --keyword bw15_new_fold5 --use_wb --data_fold 5 &
+#wait
 
 #ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword Sbw10_all --use_wb --data_fold 1 --boundary_weight 10 &
 #ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword Sbw20_all --use_wb --data_fold 1 --boundary_weight 20 &
