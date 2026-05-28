@@ -203,7 +203,8 @@ def apply_model_on_geotiff(
 
 class ArcticPredict:
     def __init__(self, **kwargs):
-        self.images = sorted(glob(os.path.join(kwargs['image_dir'], '*.tif')))
+        # self.images = sorted(glob(os.path.join(kwargs['image_dir'], '*.tif')))
+        self.images = kwargs['images']
         self.pretrained_model = kwargs['pretrained_model']
         self.ensemble = kwargs['ensemble']
         self.out_dir = kwargs['out_dir']

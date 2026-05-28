@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 import argparse
 
 sys.path.append("..")
@@ -10,22 +11,37 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Parameters
-    parser.add_argument("--keyword", type=str, default='ls2')
-    parser.add_argument("--keyword2", type=str, default=None)
+    parser.add_argument("--keyword", type=str, default='bw15')
+    parser.add_argument("--keyword2", type=str, default='bw15_new')
     parser.add_argument("--server", type=str, default='lumi')
     parser.add_argument("--ensemble_mode", type=str, default='majority')
     parser.add_argument("--patch_size", type=int, default=None)
+    parser.add_argument("--chunk_id", type=int, default=0)
+    parser.add_argument("--chunk_size", type=int, default=160)
     parser.add_argument("--wt_file", type=str, default='best_f1')
     parser.add_argument("--ensemble",
-                        action=argparse.BooleanOptionalAction, default=False)
+                        action=argparse.BooleanOptionalAction, default=True)
     params = vars(parser.parse_args())
 
     if params['server'] == 'lumi':
         run_dir = "/scratch/project_465002698/venky/projects/arctic/runs"
         # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/mosaics/'  # Corrected mosaics
-        params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/image/'    # Raw mosaics
+        # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/image/'    # Raw mosaics
+        # params['images'] = sorted(glob(os.path.join(kwargs['image_dir'], '*.tif')))
+
+        params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/all_mosaics'    # All mosaics
+        files = [
+            f for f in glob.glob(f"{params['image_dir']}/**/*mosaic.tif", recursive=True)
+            if os.path.dirname(f) != params['image_dir'] and 'browse' not in f
+        ]
+        print('Total number of images are', len(files))
+        # split all images into chunk with the size of 320
+        chunks = [files[i:i + params['chunk_size']] for i in range(0, len(files), params['chunk_size'])]
+        params['images'] = chunks[params['chunk_id']]
+        print(f'Total number of images in chunk id {params["chunk_id"]}', len(params['images'] ))
+
         base_dir = '/scratch/project_465002698/venky/projects/arctic/predictions/'
-        params['out_dir'] = os.path.join(base_dir, f"both_{params['keyword']}_{params['ensemble_mode']}")
+        params['out_dir'] = os.path.join(base_dir, f"final_{params['keyword']}_{params['ensemble_mode']}")
 
     elif params['server'] == 'local':
         run_dir = '../runs/'
