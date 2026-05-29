@@ -10,7 +10,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Parameters
-    parser.add_argument("--keyword", type=str, default='ls2')
+    parser.add_argument("--keyword", type=str, default='bw15')
+    parser.add_argument("--keyword2", type=str, default='bw15_new')
     parser.add_argument("--server", type=str, default='lumi')
     parser.add_argument("--set_name", type=str, default='test')
     parser.add_argument("--wt_file", type=str, default='best_f1')
@@ -18,7 +19,7 @@ if __name__ == '__main__':
     parser.add_argument("--data_dir", type=str,
                         default='../data/')
     parser.add_argument("--ensemble",
-                        action=argparse.BooleanOptionalAction, default=False)
+                        action=argparse.BooleanOptionalAction, default=True)
     params = vars(parser.parse_args())
 
     params['image_dir'] = os.path.join(params['data_dir'], params['set_name'], 'images')
@@ -39,6 +40,10 @@ if __name__ == '__main__':
             pretrained_model.append(os.path.join(run_dir,
                                                  f'{params["keyword"]}_fold{i}',
                                                  f'{params["wt_file"]}.pth'))
+        if params['keyword2'] is not None:
+            for i in range(1, 6):
+                path = os.path.join(run_dir, f'{params["keyword2"]}_fold{i}', f'{params["wt_file"]}.pth')
+                pretrained_model.append(path)
     else:
         pretrained_model = [os.path.join(run_dir,
                                         f'{params["keyword"]}',

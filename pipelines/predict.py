@@ -147,7 +147,6 @@ def apply_model_on_geotiff(
             if row_off in [0, max_row] or col_off in [0, max_col]:
                 pred = pred[1:-1, 1:-1]
                 p_row_start, p_row_end, p_col_start, p_col_end = 47, -47, 47, -47
-                # fixme this condition assuming there is atleast one patch without touching border
                 if col_off == 0:
                     valid_w += border
                     start_col -= border
