@@ -10,7 +10,7 @@ from sklearn.model_selection import KFold
 # ------------------------------------------------------------------
 # Five-fold split
 # ------------------------------------------------------------------
-base_directory = '/home/venky/Documents/projects/simple_segment/data/geofolds2'
+base_directory = '/home/venky/Documents/projects/simple_segment/data/geofoldsv1'
 foldernames = ['fold1', 'fold2', 'fold3', 'fold4', 'fold5']
 df = gpd.read_file("/home/venky/Documents/projects/simple_segment/data/dataset9010/train_bboxes.geojson")
 

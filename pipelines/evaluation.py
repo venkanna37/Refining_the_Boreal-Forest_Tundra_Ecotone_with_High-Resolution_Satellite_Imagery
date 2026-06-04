@@ -117,6 +117,13 @@ class ArcticEvaluation:
         self.ensemble_mode = kwargs['ensemble_mode']
         self.slice = 7 if self.set_name == 'test' else 24
 
+        # print the parameters as a dictionary
+        self.kwargs = kwargs
+        print("\n -----Training parameters-----")
+        for key, value in self.kwargs.items():
+            print(f"  {key:20s}: {value}")
+        print("----------------------------- \n")
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def run(self):

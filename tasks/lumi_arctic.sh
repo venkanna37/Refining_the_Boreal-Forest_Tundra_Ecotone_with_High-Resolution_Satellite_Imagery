@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=ArcPred3
+#SBATCH --job-name=Train3
 #SBATCH --account=project_465002698
 #SBATCH --nodes=1
-#SBATCH --gpus-per-node=8
-#SBATCH --ntasks-per-node=8
+#SBATCH --gpus-per-node=4
+#SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-task=1
 #SBATCH --mem=0
 #SBATCH --partition=standard-g
@@ -14,6 +14,32 @@
 hostname
 rocm-smi
 echo $CUDA_VISIBLE_DEVICES
+
+#ROCR_VISIBLE_DEVICES=0 python train_arctic.py --dataset geofoldsv1 --keyword bw5_split1 --use_wb --data_fold 1 --boundary_weight 5 &
+#ROCR_VISIBLE_DEVICES=1 python train_arctic.py --dataset geofoldsv1 --keyword bw5_split2 --use_wb --data_fold 2 --boundary_weight 5 &
+#ROCR_VISIBLE_DEVICES=2 python train_arctic.py --dataset geofoldsv1 --keyword bw5_split3 --use_wb --data_fold 3 --boundary_weight 5 &
+#ROCR_VISIBLE_DEVICES=3 python train_arctic.py --dataset geofoldsv1 --keyword bw5_split4 --use_wb --data_fold 4 --boundary_weight 5 &
+#ROCR_VISIBLE_DEVICES=4 python train_arctic.py --dataset geofoldsv1 --keyword bw5_split5 --use_wb --data_fold 5 --boundary_weight 5 &
+#ROCR_VISIBLE_DEVICES=5 python train_arctic.py --dataset geofoldsv2 --keyword bw5_split6 --use_wb --data_fold 1 --boundary_weight 5 &
+#ROCR_VISIBLE_DEVICES=6 python train_arctic.py --dataset geofoldsv2 --keyword bw5_split7 --use_wb --data_fold 2 --boundary_weight 5 &
+#ROCR_VISIBLE_DEVICES=7 python train_arctic.py --dataset geofoldsv2 --keyword bw5_split8 --use_wb --data_fold 3 --boundary_weight 5 &
+#wait
+
+#ROCR_VISIBLE_DEVICES=0 python train_arctic.py --dataset geofoldsv1 --keyword bw1_split1 --use_wb --data_fold 1 &
+#ROCR_VISIBLE_DEVICES=1 python train_arctic.py --dataset geofoldsv1 --keyword bw1_split2 --use_wb --data_fold 2 &
+#ROCR_VISIBLE_DEVICES=2 python train_arctic.py --dataset geofoldsv1 --keyword bw1_split3 --use_wb --data_fold 3 &
+#ROCR_VISIBLE_DEVICES=3 python train_arctic.py --dataset geofoldsv1 --keyword bw1_split4 --use_wb --data_fold 4 &
+#ROCR_VISIBLE_DEVICES=4 python train_arctic.py --dataset geofoldsv1 --keyword bw1_split5 --use_wb --data_fold 5 &
+#ROCR_VISIBLE_DEVICES=5 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split6 --use_wb --data_fold 1 &
+#ROCR_VISIBLE_DEVICES=6 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split7 --use_wb --data_fold 2 &
+#ROCR_VISIBLE_DEVICES=7 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split8 --use_wb --data_fold 3 &
+#wait
+
+ROCR_VISIBLE_DEVICES=0 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split9 --use_wb --data_fold 4 &
+ROCR_VISIBLE_DEVICES=1 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split10 --use_wb --data_fold 5 &
+ROCR_VISIBLE_DEVICES=2 python train_arctic.py --dataset geofoldsv2 --keyword bw5_split9 --use_wb --data_fold 4 --boundary_weight 5 &
+ROCR_VISIBLE_DEVICES=3 python train_arctic.py --dataset geofoldsv2 --keyword bw5_split10 --use_wb --data_fold 5 --boundary_weight 5 &
+wait
 
 #ROCR_VISIBLE_DEVICES=0 python pred_tiles.py --patch_size 4096 --chunk_id 0 &
 #ROCR_VISIBLE_DEVICES=1 python pred_tiles.py --patch_size 4096 --chunk_id 1 &
@@ -35,15 +61,15 @@ echo $CUDA_VISIBLE_DEVICES
 #ROCR_VISIBLE_DEVICES=7 python pred_tiles.py --patch_size 4096 --chunk_id 15 &
 #wait
 
-ROCR_VISIBLE_DEVICES=0 python pred_tiles.py --patch_size 4096 --chunk_id 16 &
-ROCR_VISIBLE_DEVICES=1 python pred_tiles.py --patch_size 4096 --chunk_id 17 &
-ROCR_VISIBLE_DEVICES=2 python pred_tiles.py --patch_size 4096 --chunk_id 18 &
-ROCR_VISIBLE_DEVICES=3 python pred_tiles.py --patch_size 4096 --chunk_id 19 &
-ROCR_VISIBLE_DEVICES=4 python pred_tiles.py --patch_size 4096 --chunk_id 20 &
-ROCR_VISIBLE_DEVICES=5 python pred_tiles.py --patch_size 4096 --chunk_id 21 &
-ROCR_VISIBLE_DEVICES=6 python pred_tiles.py --patch_size 4096 --chunk_id 22 &
-ROCR_VISIBLE_DEVICES=7 python pred_tiles.py --patch_size 4096 --chunk_id 23 &
-wait
+#ROCR_VISIBLE_DEVICES=0 python pred_tiles.py --patch_size 4096 --chunk_id 16 &
+#ROCR_VISIBLE_DEVICES=1 python pred_tiles.py --patch_size 4096 --chunk_id 17 &
+#ROCR_VISIBLE_DEVICES=2 python pred_tiles.py --patch_size 4096 --chunk_id 18 &
+#ROCR_VISIBLE_DEVICES=3 python pred_tiles.py --patch_size 4096 --chunk_id 19 &
+#ROCR_VISIBLE_DEVICES=4 python pred_tiles.py --patch_size 4096 --chunk_id 20 &
+#ROCR_VISIBLE_DEVICES=5 python pred_tiles.py --patch_size 4096 --chunk_id 21 &
+#ROCR_VISIBLE_DEVICES=6 python pred_tiles.py --patch_size 4096 --chunk_id 22 &
+#ROCR_VISIBLE_DEVICES=7 python pred_tiles.py --patch_size 4096 --chunk_id 23 &
+#wait
 
 #ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword bw15_new_fold1 --use_wb --data_fold 1 &
 #ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword bw15_new_fold2 --use_wb --data_fold 2 &

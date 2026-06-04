@@ -88,6 +88,14 @@ class Training:
 
         # Visualisation
         self.use_wb = kwargs.get('use_wb', False)
+
+        # print the parameters as a dictionary
+        self.kwargs = kwargs
+        print("\n -----Training parameters-----")
+        for key, value in self.kwargs.items():
+            print(f"  {key:20s}: {value}")
+        print("----------------------------- \n")
+
         if self.use_wb:
             self.writer = wandb.init(
                 project="Arctic",
