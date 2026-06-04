@@ -11,7 +11,7 @@ from tqdm import tqdm
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from pipelines import datagen, network
+from pipelines import datagen, network, network_elu, network_elu_bn
 from pipelines import utils
 
 
@@ -79,6 +79,7 @@ class Training:
         self.boundary_weight = kwargs.get('boundary_weight', 1)
         self.target_weight = kwargs.get('target_weight', 1)
         self.model_size = kwargs.get('model_size', 'small')
+        self.model_name = kwargs.get('model_name', 'unet_elu')
         self.loss_function = kwargs.get('loss_function', 'tversky')
         self.alpha = kwargs.get('alpha', 0.5)
         self.runs_dir = kwargs.get('runs_dir', 'runs')
@@ -212,7 +213,15 @@ class Training:
                                 num_workers=self.num_workers)
 
         # Setup model
-        model = network.TinyUNet(size=self.model_size)
+        if self.model_name == 'unet_elu':
+            model = network_elu.TinyUNet(size=self.model_size)
+        elif self.model_name == 'unet_elu_bn':
+            model = network_elu_bn.TinyUNet(size=self.model_size)
+        elif self.model_name == 'unet_relu_bn':
+            model = network.TinyUNet(size=self.model_size)
+        else:
+            raise Exception("Unknown model name")
+
         model.apply(utils.init_kaiming)
         n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print('number of params:', n_params)

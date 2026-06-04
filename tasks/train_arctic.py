@@ -21,9 +21,13 @@ if __name__ == '__main__':
     parser.add_argument("--epochs", type=int, default=10000)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--learning_rate", type=float, default=0.0005)
-    parser.add_argument("--boundary_weight", type=float, default=1)  # weight to boundary pixels
+    parser.add_argument("--boundary_weight", type=float, default=15)  # weight to boundary pixels
     parser.add_argument("--target_weight", type=float, default=1)  # weight to tree pixels
     parser.add_argument("--model_size", type=str, default='small')
+    parser.add_argument("--model_name", type=str, default='unet_elu')
+    # unet_relu_bn: U-Net with ReLU activation and batch normalization
+    # unet_elu_bn: U-Net with ELU activation and batch normalization
+    # unet_elu: U-Net with ELU activation and no batch normalization
     parser.add_argument("--loss_function", type=str, default='tversky')
     parser.add_argument("--alpha", type=float, help='tversky loss param', default=0.7)
 
