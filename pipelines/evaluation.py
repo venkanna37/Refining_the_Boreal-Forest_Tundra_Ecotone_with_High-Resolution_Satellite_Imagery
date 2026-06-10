@@ -6,6 +6,7 @@ from glob import glob
 import torch.nn as nn
 from pipelines import network
 from torchmetrics.classification import BinaryStatScores
+from pipelines import datagen, network, network_elu, network_elu_bn
 
 
 def estimate_metrics(tp, fp, tn, fn):
@@ -75,11 +76,21 @@ def apply_model_on_geotiff(
         checkpoint_path,
         device='cpu',
         rescale_value = 2000,
-        ensemble_mode='majority'):
+        ensemble_mode='majority',
+        model_name='unet_elu'):
 
     models = {}
     for i, path in enumerate(checkpoint_path):
-        model = network.TinyUNet()
+        # Setup model
+        if model_name == 'unet_elu':
+            model = network_elu.TinyUNet()
+        elif model_name == 'unet_elu_bn':
+            model = network_elu_bn.TinyUNet()
+        elif model_name == 'unet_relu_bn':
+            model = network.TinyUNet()
+        else:
+            raise Exception("Unknown model name")
+        # model = network.TinyUNet()
         checkpoint = torch.load(path, map_location=device)
         model.load_state_dict(checkpoint["model"])
         model.to(device)
@@ -114,6 +125,7 @@ class ArcticEvaluation:
         self.pretrained_model = kwargs['pretrained_model']
         self.ensemble = kwargs['ensemble']
         self.set_name = kwargs['set_name']
+        self.model_name = kwargs['model_name']
         self.ensemble_mode = kwargs['ensemble_mode']
         self.slice = 7 if self.set_name == 'test' else 24
 
@@ -137,7 +149,8 @@ class ArcticEvaluation:
             y_pred = apply_model_on_geotiff(image_path,
                                             self.pretrained_model,
                                             device=self.device,
-                                            ensemble_mode=self.ensemble_mode)
+                                            ensemble_mode=self.ensemble_mode,
+                                            model_name=self.model_name)
 
             # get gound truth mask
             with rasterio.open(label_path) as src:

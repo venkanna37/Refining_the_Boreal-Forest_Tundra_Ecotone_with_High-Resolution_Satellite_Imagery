@@ -1,29 +1,58 @@
 #!/bin/bash
-#SBATCH --job-name=Train1
+#SBATCH --job-name=Train7
 #SBATCH --account=project_465002698
 #SBATCH --nodes=1
-#SBATCH --gpus-per-node=8
-#SBATCH --ntasks-per-node=8
+#SBATCH --gpus-per-node=2
+#SBATCH --ntasks-per-node=2
 #SBATCH --gpus-per-task=1
-#SBATCH --mem=0
-#SBATCH --partition=standard-g
+#SBATCH --mem=64G
+#SBATCH --partition=small-g
 #SBATCH --output=/scratch/project_465002698/venky/projects/arctic/out_files/%x_%j.out
 #SBATCH --error=/scratch/project_465002698/venky/projects/arctic/out_files/%x_%j.err
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 
 hostname
 rocm-smi
 echo $CUDA_VISIBLE_DEVICES
 
-ROCR_VISIBLE_DEVICES=0 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split1_elu --use_wb --data_fold 1 --model_name unet_elu &
-ROCR_VISIBLE_DEVICES=1 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split2_elu --use_wb --data_fold 2 --model_name unet_elu &
-ROCR_VISIBLE_DEVICES=2 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split3_elu --use_wb --data_fold 3 --model_name unet_elu &
-ROCR_VISIBLE_DEVICES=3 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split4_elu --use_wb --data_fold 4 --model_name unet_elu &
-ROCR_VISIBLE_DEVICES=4 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split5_elu --use_wb --data_fold 5 --model_name unet_elu &
-ROCR_VISIBLE_DEVICES=5 python train_arctic.py --dataset geofoldsv2 --keyword bw15_split6_elu --use_wb --data_fold 1 --model_name unet_elu &
-ROCR_VISIBLE_DEVICES=6 python train_arctic.py --dataset geofoldsv2 --keyword bw15_split7_elu --use_wb --data_fold 2 --model_name unet_elu &
-ROCR_VISIBLE_DEVICES=7 python train_arctic.py --dataset geofoldsv2 --keyword bw15_split8_elu --use_wb --data_fold 3 --model_name unet_elu &
+#ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword elu_bw15_split1 --dataset geofoldsv1 --use_wb --data_fold 1 &
+#ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword elu_bw15_split2 --dataset geofoldsv1 --use_wb --data_fold 2 &
+#ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword elu_bw15_split3 --dataset geofoldsv1 --use_wb --data_fold 3 &
+#ROCR_VISIBLE_DEVICES=3 python train_arctic.py --keyword elu_bw15_split4 --dataset geofoldsv1 --use_wb --data_fold 4 &
+#ROCR_VISIBLE_DEVICES=4 python train_arctic.py --keyword elu_bw15_split5 --dataset geofoldsv1 --use_wb --data_fold 5 &
+#ROCR_VISIBLE_DEVICES=5 python train_arctic.py --keyword elu_bw15_split6 --dataset geofoldsv2 --use_wb --data_fold 1 &
+#ROCR_VISIBLE_DEVICES=6 python train_arctic.py --keyword elu_bw15_split7 --dataset geofoldsv2 --use_wb --data_fold 2 &
+#ROCR_VISIBLE_DEVICES=7 python train_arctic.py --keyword elu_bw15_split8 --dataset geofoldsv2 --use_wb --data_fold 3 &
+#wait
+
+ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword elu_bw15_split9 --dataset geofoldsv2 --use_wb --data_fold 4 &
+ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword elu_bw15_split10 --dataset geofoldsv2 --use_wb --data_fold 5 &
 wait
+
+#ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword split1_elu_lr601 --use_wb  --learning_rate 0.000001 &
+#ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword split1_elu_lr603 --use_wb  --learning_rate 0.000003 &
+#ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword split1_elu_lr607 --use_wb  --learning_rate 0.000007 &
+#ROCR_VISIBLE_DEVICES=3 python train_arctic.py --keyword split1_elu_lr609 --use_wb  --learning_rate 0.000009 &
+#ROCR_VISIBLE_DEVICES=4 python train_arctic.py --keyword split1_elu_lr701 --use_wb  --learning_rate 0.0000001 &
+#wait
+
+#ROCR_VISIBLE_DEVICES=0 python train_arctic.py --keyword split1_elu_lr101 --use_wb  --learning_rate 0.1 &
+#ROCR_VISIBLE_DEVICES=1 python train_arctic.py --keyword split1_elu_lr105 --use_wb  --learning_rate 0.5 &
+#ROCR_VISIBLE_DEVICES=2 python train_arctic.py --keyword split1_elu_lr205 --use_wb  --learning_rate 0.05 &
+#ROCR_VISIBLE_DEVICES=3 python train_arctic.py --keyword split1_elu_lr305 --use_wb  --learning_rate 0.005 &
+#ROCR_VISIBLE_DEVICES=4 python train_arctic.py --keyword split1_elu_lr505 --use_wb  --learning_rate 0.00005 &
+#ROCR_VISIBLE_DEVICES=5 python train_arctic.py --keyword split1_elu_lr605 --use_wb  --learning_rate 0.000005 &
+#wait
+
+#ROCR_VISIBLE_DEVICES=0 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split1_elu --use_wb --data_fold 1 --model_name unet_elu &
+#ROCR_VISIBLE_DEVICES=1 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split2_elu --use_wb --data_fold 2 --model_name unet_elu &
+#ROCR_VISIBLE_DEVICES=2 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split3_elu --use_wb --data_fold 3 --model_name unet_elu &
+#ROCR_VISIBLE_DEVICES=3 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split4_elu --use_wb --data_fold 4 --model_name unet_elu &
+#ROCR_VISIBLE_DEVICES=4 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split5_elu --use_wb --data_fold 5 --model_name unet_elu &
+#ROCR_VISIBLE_DEVICES=5 python train_arctic.py --dataset geofoldsv2 --keyword bw15_split6_elu --use_wb --data_fold 1 --model_name unet_elu &
+#ROCR_VISIBLE_DEVICES=6 python train_arctic.py --dataset geofoldsv2 --keyword bw15_split7_elu --use_wb --data_fold 2 --model_name unet_elu &
+#ROCR_VISIBLE_DEVICES=7 python train_arctic.py --dataset geofoldsv2 --keyword bw15_split8_elu --use_wb --data_fold 3 --model_name unet_elu &
+#wait
 
 #ROCR_VISIBLE_DEVICES=0 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split1_elu_bn --use_wb --data_fold 1 --model_name unet_elu_bn &
 #ROCR_VISIBLE_DEVICES=1 python train_arctic.py --dataset geofoldsv1 --keyword bw15_split2_elu_bn --use_wb --data_fold 2 --model_name unet_elu_bn &
@@ -62,11 +91,11 @@ wait
 #ROCR_VISIBLE_DEVICES=7 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split8 --use_wb --data_fold 3 &
 #wait
 
-ROCR_VISIBLE_DEVICES=0 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split9 --use_wb --data_fold 4 &
-ROCR_VISIBLE_DEVICES=1 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split10 --use_wb --data_fold 5 &
-ROCR_VISIBLE_DEVICES=2 python train_arctic.py --dataset geofoldsv2 --keyword bw5_split9 --use_wb --data_fold 4 --boundary_weight 5 &
-ROCR_VISIBLE_DEVICES=3 python train_arctic.py --dataset geofoldsv2 --keyword bw5_split10 --use_wb --data_fold 5 --boundary_weight 5 &
-wait
+#ROCR_VISIBLE_DEVICES=0 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split9 --use_wb --data_fold 4 &
+#ROCR_VISIBLE_DEVICES=1 python train_arctic.py --dataset geofoldsv2 --keyword bw1_split10 --use_wb --data_fold 5 &
+#ROCR_VISIBLE_DEVICES=2 python train_arctic.py --dataset geofoldsv2 --keyword bw5_split9 --use_wb --data_fold 4 --boundary_weight 5 &
+#ROCR_VISIBLE_DEVICES=3 python train_arctic.py --dataset geofoldsv2 --keyword bw5_split10 --use_wb --data_fold 5 --boundary_weight 5 &
+#wait
 
 #ROCR_VISIBLE_DEVICES=0 python pred_tiles.py --patch_size 4096 --chunk_id 0 &
 #ROCR_VISIBLE_DEVICES=1 python pred_tiles.py --patch_size 4096 --chunk_id 1 &

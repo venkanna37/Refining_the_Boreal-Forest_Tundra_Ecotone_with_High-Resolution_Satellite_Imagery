@@ -10,6 +10,8 @@ from pipelines import network
 from itertools import product
 from rasterio.windows import Window
 # import matplotlib.pyplot as plt
+from pipelines import datagen, network, network_elu, network_elu_bn
+
 
 # function that take dictionary of models and gives the final mask
 @torch.no_grad()
@@ -83,11 +85,21 @@ def apply_model_on_geotiff(
         rescale_value = 2000,
         patch_size=None,
         border=47,
-        ensemble_mode='majority'):
+        ensemble_mode='majority',
+        model_name='unet_elu'):
 
     models = {}
     for i, path in enumerate(checkpoint_path):
-        model = network.TinyUNet()
+        # Setup model
+        if model_name == 'unet_elu':
+            model = network_elu.TinyUNet()
+        elif model_name == 'unet_elu_bn':
+            model = network_elu_bn.TinyUNet()
+        elif model_name == 'unet_relu_bn':
+            model = network.TinyUNet()
+        else:
+            raise Exception("Unknown model name")
+        # model = network.TinyUNet()
         checkpoint = torch.load(path, map_location=device)
         model.load_state_dict(checkpoint["model"])
         model.to(device)
@@ -210,6 +222,7 @@ class ArcticPredict:
         self.out_dir = kwargs['out_dir']
         self.patch_size = kwargs['patch_size']
         self.ensemble_mode = kwargs['ensemble_mode']
+        self.model_name = kwargs['model_name']
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.csv_path = kwargs['csv_path']
 
@@ -223,7 +236,8 @@ class ArcticPredict:
                                        output_path=output_path,
                                        device=self.device,
                                        patch_size=self.patch_size,
-                                       ensemble_mode=self.ensemble_mode)
+                                       ensemble_mode=self.ensemble_mode,
+                                       model_name=self.model_name)
                 status = 'success'
             except Exception as e:
                 print(f"Failed to process {image_path}: {e}")

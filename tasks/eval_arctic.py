@@ -15,6 +15,7 @@ if __name__ == '__main__':
     parser.add_argument("--ensemble_mode", type=str, default='majority')
     parser.add_argument("--set_name", type=str, default='test')
     parser.add_argument("--wt_file", type=str, default='best_f1')
+    parser.add_argument("--model_name", type=str, default='unet_elu')
     parser.add_argument("--pred_setting", type=int, default=1)
     # 1 :- all models
     # 2 :- first five models

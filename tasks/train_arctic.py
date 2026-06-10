@@ -18,9 +18,9 @@ if __name__ == '__main__':
     parser.add_argument("--dataset", type=str, default='geofoldsv1')
 
     # model and training parameters
-    parser.add_argument("--epochs", type=int, default=10000)
+    parser.add_argument("--epochs", type=int, default=20000)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--learning_rate", type=float, default=0.0005)
+    parser.add_argument("--learning_rate", type=float, default=0.000009)
     parser.add_argument("--boundary_weight", type=float, default=15)  # weight to boundary pixels
     parser.add_argument("--target_weight", type=float, default=1)  # weight to tree pixels
     parser.add_argument("--model_size", type=str, default='small')

@@ -23,6 +23,7 @@ if __name__ == '__main__':
     parser.add_argument("--chunk_id", type=int, default=0)
     parser.add_argument("--chunk_size", type=int, default=105)
     parser.add_argument("--wt_file", type=str, default='best_f1')
+    parser.add_argument("--model_name", type=str, default='unet_elu')
     parser.add_argument("--ensemble",
                         action=argparse.BooleanOptionalAction, default=True)
     params = vars(parser.parse_args())
@@ -30,11 +31,11 @@ if __name__ == '__main__':
     if params['server'] == 'lumi':
         run_dir = "/scratch/project_465002698/venky/projects/arctic/runs"
         # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/mosaics/'  # Corrected mosaics
-        # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/image/'    # Raw mosaics
+        params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/image/'    # Raw mosaics
         # params['images'] = sorted(glob(os.path.join(kwargs['image_dir'], '*.tif')))
 
         # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/rclone_download'    # All mosaics
-        params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/all_mosaics'    # Single mosaics
+        # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/all_mosaics'    # Single mosaics
         files = [
             f for f in glob.glob(f"{params['image_dir']}/**/*mosaic.tif", recursive=True)
             if os.path.dirname(f) != params['image_dir'] and 'browse' not in f
