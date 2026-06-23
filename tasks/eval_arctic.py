@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser.add_argument("--ensemble_mode", type=str, default='majority')
     parser.add_argument("--set_name", type=str, default='test')
     parser.add_argument("--wt_file", type=str, default='best_f1')
-    parser.add_argument("--model_name", type=str, default='unet_elu')
+    parser.add_argument("--model_name", type=str, default='unet_relu_bn')
     parser.add_argument("--pred_setting", type=int, default=1)
     # 1 :- all models
     # 2 :- first five models
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     params['results_csv'] = '../documents/results.csv'  #fixme not using this for now
 
     if params['server'] == 'lumi':
-        run_dir = "/scratch/project_465002698/venky/projects/arctic/runs"
+        run_dir = "/scratch/project_465002698/venky/projects/arctic/runs/final_runs"
     elif params['server'] == 'local':
         run_dir = '../runs/'
     else:

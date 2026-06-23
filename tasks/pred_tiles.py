@@ -11,7 +11,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Parameters
-    parser.add_argument("--keyword", type=str, default='bw5')
+    parser.add_argument("--keyword", type=str, default='bw15')
+    parser.add_argument("--out_folder", type=str, default='')
     parser.add_argument("--server", type=str, default='lumi')
     parser.add_argument("--ensemble_mode", type=str, default='majority')
     parser.add_argument("--csv_path", type=str, default='predictions.csv')
@@ -23,29 +24,37 @@ if __name__ == '__main__':
     parser.add_argument("--chunk_id", type=int, default=0)
     parser.add_argument("--chunk_size", type=int, default=105)
     parser.add_argument("--wt_file", type=str, default='best_f1')
-    parser.add_argument("--model_name", type=str, default='unet_elu')
+    parser.add_argument("--model_name", type=str, default='unet_relu_bn')
     parser.add_argument("--ensemble",
                         action=argparse.BooleanOptionalAction, default=True)
     params = vars(parser.parse_args())
 
     if params['server'] == 'lumi':
-        run_dir = "/scratch/project_465002698/venky/projects/arctic/runs"
+        run_dir = "/scratch/project_465002698/venky/projects/arctic/runs/final_runs/"
         # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/mosaics/'  # Corrected mosaics
-        params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/image/'    # Raw mosaics
-        # params['images'] = sorted(glob(os.path.join(kwargs['image_dir'], '*.tif')))
-
         # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/rclone_download'    # All mosaics
         # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/all_mosaics'    # Single mosaics
-        files = [
-            f for f in glob.glob(f"{params['image_dir']}/**/*mosaic.tif", recursive=True)
-            if os.path.dirname(f) != params['image_dir'] and 'browse' not in f
-        ]
+        # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/image/'    # Raw mosaics
+        # files = [
+        #     f for f in glob.glob(f"{params['image_dir']}/**/*mosaic.tif", recursive=True)
+        #     if os.path.dirname(f) != params['image_dir'] and 'browse' not in f
+        # ]
+
+        params[
+            'image_dir'] = '/scratch/project_465002698/venky/projects/arctic/arctic_ini_files/forAnkit/testData/tiles/spring/'  # Sprint test mosaics
+        # params['image_dir'] = '/scratch/project_465002698/venky/projects/arctic/arctic_ini_files/forAnkit/testData/tiles/summer/'    # Summer test mosaics
+        files = sorted(glob.glob(os.path.join(params['image_dir'], '*.tif')))[5:]
+
+
+
         print('Total number of images are', len(files))
         # split all images into chunk with the size of 320
         chunks = [files[i:i + params['chunk_size']] for i in range(0, len(files), params['chunk_size'])]
         params['images'] = chunks[params['chunk_id']]
         print(f'Total number of images in chunk id {params["chunk_id"]}', len(params['images'] ))
         print(f'Total number of chunks {len(chunks)}')
+
+
 
         base_dir = '/scratch/project_465002698/venky/projects/arctic/predictions/'
         # params['out_dir'] = os.path.join(base_dir, f"final_{params['keyword']}_{params['ensemble_mode']}")
@@ -74,7 +83,7 @@ if __name__ == '__main__':
         for i in range(start_idx, end_idx):
             path = os.path.join(run_dir, f'{params["keyword"]}_split{i}', f'{params["wt_file"]}.pth')
             pretrained_model.append(path)
-        params['out_dir'] = os.path.join(base_dir,  f"{params['keyword']}_{params['pred_setting']}_{params['ensemble_mode']}")
+        params['out_dir'] = os.path.join(base_dir,  f"{params['keyword']}_{params['pred_setting']}_{params['ensemble_mode']}_{params['out_folder']}")
         if not os.path.isdir(params['out_dir']):
             os.makedirs(params['out_dir'])
 
