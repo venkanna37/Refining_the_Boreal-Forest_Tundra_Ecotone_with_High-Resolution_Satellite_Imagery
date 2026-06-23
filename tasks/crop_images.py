@@ -3,8 +3,10 @@ import rasterio
 from rasterio.windows import from_bounds
 from glob import glob
 import matplotlib.pyplot as plt
+import numpy as np
+from rasterio.warp import reproject, Resampling
 
-season = 'spring'
+season = 'summer'
 big_tif_images = glob(f'/home/venky/Documents/projects/data/arctic/venky_predictions/bw15_1_majority_{season}/*.tif')
 small_tif_images = glob('/home/venky/Documents/projects/arctic/data/test/images/*.tif')
 
@@ -15,38 +17,34 @@ for small_tif in small_tif_images:
     site_id = os.path.basename(small_tif)[:7]
     big_tif = [image for image in big_tif_images if site_id in image][0]
 
-    # Open the reference (small) image
-    with rasterio.open(small_tif) as small_src:
-        org_image = small_src.read(1)
-        bounds = small_src.bounds
-        small_profile = small_src.profile
-
-    # Open the large image
-    with rasterio.open(big_tif) as big_src:
-
-        # Create window corresponding to small image extent
-        window = from_bounds(
-            bounds.left,
-            bounds.bottom,
-            bounds.right,
-            bounds.top,
-            transform=big_src.transform
+    with rasterio.open(big_tif) as src_big, rasterio.open(small_tif) as src_small:
+        dst_array = np.zeros(
+            (src_big.count, src_small.height, src_small.width),
+            dtype=src_big.dtypes[0]
         )
 
-        # Read data from large image
-        data = big_src.read(window=window)
+        for band in range(1, src_big.count + 1):
+            reproject(
+                source=rasterio.band(src_big, band),
+                destination=dst_array[band - 1],
+                src_transform=src_big.transform,
+                src_crs=src_big.crs,
+                dst_transform=src_small.transform,
+                dst_crs=src_small.crs,
+                resampling=Resampling.nearest
+            )
 
-        # Update profile to match extracted data
-        profile = big_src.profile.copy()
+        profile = src_big.profile.copy()
         profile.update(
-            height=data.shape[1],
-            width=data.shape[2],
-            transform=big_src.window_transform(window)
+            height=src_small.height,
+            width=src_small.width,
+            transform=src_small.transform,
+            crs=src_small.crs
         )
 
     # Save subset
     output_tif = os.path.join(output_directory, os.path.basename(small_tif))
     with rasterio.open(output_tif, "w", **profile) as dst:
-        dst.write(data)
+        dst.write(dst_array)
 
     print("Subset saved:", output_tif)
