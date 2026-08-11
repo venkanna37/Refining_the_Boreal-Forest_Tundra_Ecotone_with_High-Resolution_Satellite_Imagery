@@ -9,7 +9,6 @@ import torch.nn as nn
 from pipelines import network
 from itertools import product
 from rasterio.windows import Window
-# import matplotlib.pyplot as plt
 from pipelines import datagen, network, network_elu, network_elu_bn
 
 

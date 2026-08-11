@@ -10,7 +10,6 @@ from tqdm import tqdm
 
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-
 from pipelines import datagen, network, network_elu, network_elu_bn
 from pipelines import utils
 

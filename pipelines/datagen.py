@@ -7,7 +7,6 @@ import torch
 import rasterio
 import numpy as np
 from glob import glob
-import kornia.augmentation as K
 from rasterio.features import rasterize
 from kornia.geometry import vflip, hflip
 from kornia.geometry.transform import Rotate
