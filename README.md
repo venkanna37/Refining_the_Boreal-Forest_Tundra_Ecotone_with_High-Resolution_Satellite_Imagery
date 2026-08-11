@@ -1,8 +1,8 @@
 # Refining the Boreal-Forest Tundra Ecotone with High-Resolution Satellite Imagery
-This repository contains the neural network model (UNet) and other essential codes for segmenting trees in Tundra region from high-resolution panchromatic images.
+This repository contains the training U-Net and other essential codes for mapping trees in Tundra region from high-resolution panchromatic images.
 
 The code is structured as separate python file for each task  (e.g., `train.py` for training).
-Each python file contains a considerable part of the pipeline and they are supported with other python files available in the tools directory.
+Each python file contains a considerable part of the pipeline and they are supported with other python files available in the `tools` directory.
 
 [![DOI](https://zenodo.org/badge/21889707.svg)](https://zenodo.org/badge/latestdoi/21889707)
 
