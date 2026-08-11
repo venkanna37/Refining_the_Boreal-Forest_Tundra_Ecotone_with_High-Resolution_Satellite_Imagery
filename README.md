@@ -1,11 +1,12 @@
 # Refining the Boreal-Forest Tundra Ecotone with High-Resolution Satellite Imagery
 This repository contains the training U-Net and other essential codes for mapping trees in Tundra region from high-resolution panchromatic images.
 
+[![DOI](https://zenodo.org/badge/21889707.svg)](https://zenodo.org/badge/latestdoi/21889707)
+
 The code is structured as separate python file for each task  (e.g., `train.py` for training).
 Each python file contains a considerable part of the pipeline and they are supported with other python files available in the `tools` directory.
 
-[![DOI](https://zenodo.org/badge/21889707.svg)](https://zenodo.org/badge/latestdoi/21889707)
-
+The outline of this repository is given as follows:
 * [**Installation**](#installation)
 * [**Data**](#data)
 * [**Training**](#training)
@@ -15,7 +16,8 @@ Each python file contains a considerable part of the pipeline and they are suppo
 
 
 ## Installation
-Installing the packages in `requirements.txt` allows using all provided code.
+Installing all the packages listed in `requirements.txt` allows you to run the code.
+The commands below create Conda environment and install all the packages.
 
 ```bash
 conda create -n "arctic" python=3.11.0
@@ -25,11 +27,11 @@ pip install -r requirements.txt
 ---
 
 ## Data
-Custom datasets should follow the datasets folder structure below.
-Both images and labels should be prepared before and save in `.tif` format.
-Some example dataset from similar task added in `datasets/sample_data` folder.
-The training pipeline save checkpoints in runs folder.
-Both custom `datasets` and `runs` folders can be specified during training and evaluation.
+Custom datasets must follow the folder structure shown below.
+Both images and labels should be prepare and save in `.tif` format.
+Example datasets from similar tasks are provided in the `datasets/sample_data` folder.
+The training pipeline saves checkpoints in `runs` folder.
+Custom `datasets` and `runs` folders can be specified during both training and evaluation.
 
 ```
 datasets                  # All datasets
@@ -57,10 +59,10 @@ runs                      # All checkpoints or trained models
 To train the model on `sample_data`, run:
 
 ```bash
-python train.py --keyword test_run --data_dir ./datasets/sample_data
+python train.py --keyword unet_fold1 --data_dir ./datasets/sample_data
 ```
 
-Change `--data_dir` to custom data directory to train on it.
+Change `--data_dir` to custom data directory to train on it. Also change `--keyword` to save checkpoints to new folder.
 
 For all available options like `--data_dir`, run:
 
@@ -74,20 +76,20 @@ python train.py --help
 To evaluate the model on `sample_data` (on `test` set), run:
 
 ```bash
-python eval.py --keyword test_run --data_dir ./datasets/sample_data --set_name test
+python eval.py --keyword unet_fold1 --data_dir ./datasets/sample_data --set_name test
 ```
 
-Change `--keyword`, `--data_dir` and `--set_name` accordingly and try `python pred.py --help` for the options.
+Change `--keyword`, `--data_dir` and `--set_name` accordingly and run `python pred.py --help` for all options.
 
 
 ## Predict tiles
-To predict all tiles in folder `tiles_folder`, run:
+To predict all tiles in the folder `tiles_folder`, run:
 
 ```bash
 python pred.py --keyword test_run --data_dir ./datasets/tiles_folder
 ```
 
-Change `--keyword` and `--data_dir` accordingly and try `python pred.py --help` for the options.
+Change `--keyword` and `--data_dir` accordingly and run `python pred.py --help` for all options.
 
 ## Postprocessing
 Coming soon
