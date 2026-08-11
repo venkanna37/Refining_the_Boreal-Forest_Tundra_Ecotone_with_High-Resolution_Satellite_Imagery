@@ -3,7 +3,7 @@
 # Refining the Boreal-Forest Tundra Ecotone with High-Resolution Satellite Imagery
 This repository contains the training U-Net and other essential codes for mapping trees in Tundra region from high-resolution panchromatic images.
 
-[![DOI](https://zenodo.org/badge/21892162.svg)](https://doi.org/10.5281/zenodo.21892162)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21892162.svg)](https://doi.org/10.5281/zenodo.21892162)
 
 The code is structured as separate python file for each task  (e.g., `train.py` for training).
 Each python file contains a considerable part of the pipeline and they are supported with other python files available in the `tools` directory.
