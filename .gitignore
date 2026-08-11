@@ -1,9 +1,8 @@
+# files
 *.qgz
 
-
 # folders
-documents
 .idea
 data
 runs
-pipelines/__pycache__
+tools/__pycache__

@@ -2,7 +2,8 @@ import sys
 import argparse
 
 sys.path.append("..")
-from pipelines import training
+from tools import training
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
