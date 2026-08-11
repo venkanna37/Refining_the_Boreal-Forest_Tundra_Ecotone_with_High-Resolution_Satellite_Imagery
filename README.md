@@ -20,7 +20,7 @@ The outline of this repository is given as follows:
 ## Installation
 Installing all the packages listed in `requirements.txt` allows you to run the code.
 The commands below create Conda environment and install all the packages.
-You can also install packages in other python environments instead of creating conda environment.
+Packages can also install in other python environments instead of creating conda environment.
 
 ```bash
 conda create -n "arctic" python=3.11.0
