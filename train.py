@@ -8,38 +8,52 @@ from tools import training
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # general parameters
-    parser.add_argument("--keyword", type=str, default="test")
-    parser.add_argument("--server", type=str, default="lumi")
-
+    parser.add_argument("--keyword", type=str, default="test",
+                        help='Keyword for naming checkpoint and run in weights and biases')
+    
     # data parameters
-    parser.add_argument("--data_fold", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--patch_size", type=int, default=256) # this is train patch size
-    parser.add_argument("--stretch_setting", type=int, default=2)
-    parser.add_argument("--dataset", type=str, default='geofoldsv1')
+    parser.add_argument("--batch_size", type=int, default=64,
+                        help='Batch size for training')
+    parser.add_argument("--patch_size", type=int, default=256,
+                        help='Patch size while training')
+    parser.add_argument("--data_dir", type=str, default='./datasets',
+                        help='Directory to the datasets')
+    parser.add_argument("--dataset_name", type=str, default='sample_data',
+                        help='Name of the dataset inside dataset directory')
 
     # model and training parameters
-    parser.add_argument("--epochs", type=int, default=20000)
-    parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--learning_rate", type=float, default=0.000009)
-    parser.add_argument("--boundary_weight", type=float, default=15)  # weight to boundary pixels
-    parser.add_argument("--target_weight", type=float, default=1)  # weight to tree pixels
-    parser.add_argument("--model_size", type=str, default='small')
-    parser.add_argument("--model_name", type=str, default='unet_elu')
+    parser.add_argument("--epochs", type=int, default=20000,
+                        help='Number of epochs')
+    parser.add_argument("--num_workers", type=int, default=4,
+                        help='Number of workers')
+    parser.add_argument("--learning_rate", type=float, default=0.000009,
+                        help='Learning rate')
+    parser.add_argument("--boundary_weight", type=float, default=15,
+                        help='Weight for boundary pixels of trees')
+    parser.add_argument("--target_weight", type=float, default=1,
+                        help='Weight for target pixels of trees')
+    parser.add_argument("--model_size", type=str, default='small',
+                        help='Size of the model, there are two different size of model')
+    parser.add_argument("--model_name", type=str, default='unet_elu',
+                        help='Model with different activation and batch normalization',
+                        choices=['unet_relu_bn', 'unet_elu_bn', 'unet_elu'])
     # unet_relu_bn: U-Net with ReLU activation and batch normalization
     # unet_elu_bn: U-Net with ELU activation and batch normalization
     # unet_elu: U-Net with ELU activation and no batch normalization
-    parser.add_argument("--loss_function", type=str, default='tversky')
-    parser.add_argument("--alpha", type=float, help='tversky loss param', default=0.7)
+    parser.add_argument("--loss_function", type=str, default='tversky',
+                        help='Loss function',
+                        choices=['tversky', 'ce'])
+    parser.add_argument("--alpha", type=float, default=0.7,
+                        help='tversky loss param')
+    parser.add_argument('--checkpoints_dir', type=str, default='./runs',
+                        help='output directory to save check points and logs')
 
     # visualisation params
-    parser.add_argument("--use_wb", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--use_wb", action=argparse.BooleanOptionalAction, default=False,
+                        help='Use weights and biases for visualisation')
     params = vars(parser.parse_args())
-    params['data_dir'] = f'../data/{params["dataset"]}/fold{params["data_fold"]}/'
-    if params['server'] == 'lumi':
-        params['runs_dir'] = '/scratch/project_465002698/venky/projects/arctic/runs'
-    if params['server'] == 'local':
-        params['runs_dir'] = '../runs'
+    if params['dataset_name'] is not None:
+        params['data_dir'] = os.path.join(params['data_dir'], params["dataset_name"])
 
     train = training.Training(**params)
     train.train()
