@@ -9,7 +9,7 @@ from tools import training
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # general parameters
-    parser.add_argument("--keyword", type=str, default="test",
+    parser.add_argument("--keyword", type=str, default="test_run",
                         help='Keyword for naming checkpoint and run in weights and biases')
     
     # data parameters

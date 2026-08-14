@@ -98,7 +98,8 @@ Change `--keyword` and `--data_dir` accordingly and run `python pred.py --help` 
 Coming soon
 
 ## A note on the data source
+Adjust hyperparameters for the dataset.
 This code is customized for the data that was available to us.
 It relies on satellite images with single channel and assumes that the one channel is stored in independent file
-and consequently read independently.
+and consequently read independently. Labels available 
 In case your data is available in a single file (maybe with multiple channels), then use `--num_channels` options.

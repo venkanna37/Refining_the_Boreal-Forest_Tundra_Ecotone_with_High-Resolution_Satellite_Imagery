@@ -8,6 +8,7 @@ from torchmetrics.classification import BinaryStatScores
 from tools import network, network_elu, network_elu_bn
 
 
+# estimate metrics from TP, FP, TN and FN
 def estimate_metrics(tp, fp, tn, fn):
     precision = tp / (tp + fp) if (tp + fp) > 0 else torch.tensor(0.0)
     recall = tp / (tp + fn) if (tp + fn) > 0 else torch.tensor(0.0)
@@ -16,7 +17,7 @@ def estimate_metrics(tp, fp, tn, fn):
     return precision, recall, f1, accuracy
 
 
-# function that take dictionary of models and gives the final mask
+# function that take list of models and gives the final mask
 @torch.no_grad()
 def ensemble_union_predict(models,
                            input_patch,
@@ -69,18 +70,20 @@ def ensemble_union_predict(models,
     return mask
 
 
-# function that takes the image and give the prediction
+# Function that takes the image and give the prediction
 def apply_model_on_geotiff(
         geotiff_path,
         checkpoint_path,
         device='cpu',
         rescale_value = 2000,
-        ensemble_mode='majority',
-        model_name='unet_elu'):
+        ensemble_mode='majority'):
 
     models = {}
     for i, path in enumerate(checkpoint_path):
         # Setup model
+        checkpoint = torch.load(path, map_location=device)
+        model_name = checkpoint['parameters']['model_name']
+
         if model_name == 'unet_elu':
             model = network_elu.TinyUNet()
         elif model_name == 'unet_elu_bn':
@@ -89,8 +92,7 @@ def apply_model_on_geotiff(
             model = network.TinyUNet()
         else:
             raise Exception("Unknown model name")
-        # model = network.TinyUNet()
-        checkpoint = torch.load(path, map_location=device)
+
         model.load_state_dict(checkpoint["model"])
         model.to(device)
         model.eval()
@@ -124,7 +126,6 @@ class ArcticEvaluation:
         self.pretrained_model = kwargs['pretrained_model']
         self.ensemble = kwargs['ensemble']
         self.set_name = kwargs['set_name']
-        self.model_name = kwargs['model_name']
         self.ensemble_mode = kwargs['ensemble_mode']
         self.slice = 7 if self.set_name == 'test' else 24
 
@@ -148,8 +149,7 @@ class ArcticEvaluation:
             y_pred = apply_model_on_geotiff(image_path,
                                             self.pretrained_model,
                                             device=self.device,
-                                            ensemble_mode=self.ensemble_mode,
-                                            model_name=self.model_name)
+                                            ensemble_mode=self.ensemble_mode)
 
             # get gound truth mask
             with rasterio.open(label_path) as src:
@@ -159,6 +159,7 @@ class ArcticEvaluation:
                 y_true = torch.from_numpy(y_true).to(self.device)
 
             # y_pred = y_pred[1:-1, 1:-1] #fixme
+            import ipdb; ipdb.set_trace()
             metrics.update(y_pred, y_true)
             if self.set_name == 'test':
                 individual_metrics.reset()
