@@ -1,5 +1,5 @@
 """
-Training UNet with WandB logging and comprehensive metrics
+Training Tiny UNet for tree segmentation
 """
 
 import os
@@ -10,10 +10,11 @@ from tqdm import tqdm
 
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from pipelines import datagen, network, network_elu, network_elu_bn
-from pipelines import utils
+from tools import datagen, network, network_elu, network_elu_bn
+from tools import utils
 
 
+# Tverkey loss function
 def tversky(y_t,
             y_pred,
             y_ext=None,
@@ -33,6 +34,7 @@ def tversky(y_t,
     score = (numerator + smooth) / (denominator + smooth)
     return 1 - score
 
+# Function for writing images in weights and biases
 def write_images(last_batch, writer, epoch, set_name='train'):
         b, _, h, w = last_batch.shape
         image = last_batch[:, [0], :, :]
@@ -60,6 +62,7 @@ def write_images(last_batch, writer, epoch, set_name='train'):
             f"{set_name}/predictions": mask_list, "epoch": epoch})
 
 
+# Training class
 class Training:
     def __init__(self, **kwargs):
         # general parameters
@@ -68,7 +71,6 @@ class Training:
         # data parameters
         self.batch_size = kwargs.get('batch_size', 2)
         self.patch_size = kwargs.get('patch_size', 256)
-        self.stretch_setting = kwargs.get('stretch_setting', 1)
         self.data_dir = kwargs.get('data_dir', None)
 
         # Training parameters
@@ -81,7 +83,7 @@ class Training:
         self.model_name = kwargs.get('model_name', 'unet_elu')
         self.loss_function = kwargs.get('loss_function', 'tversky')
         self.alpha = kwargs.get('alpha', 0.5)
-        self.runs_dir = kwargs.get('runs_dir', 'runs')
+        self.runs_dir = kwargs.get('checkpoints_dir', './runs')
         self.checkpoints_dir = os.path.join(self.runs_dir, self.keyword)
         os.makedirs(self.checkpoints_dir, exist_ok=True)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -89,12 +91,12 @@ class Training:
         # Visualisation
         self.use_wb = kwargs.get('use_wb', False)
 
-        # print the parameters as a dictionary
-        self.kwargs = kwargs
+        # print all paprameters using in this training
         print("\n -----Training parameters-----")
-        for key, value in self.kwargs.items():
+        for key, value in self.__dict__.items():
             print(f"  {key:20s}: {value}")
         print("----------------------------- \n")
+        self.config = dict(vars(self))
 
         if self.use_wb:
             self.writer = wandb.init(
@@ -128,12 +130,6 @@ class Training:
                 y_w = mask[:, [1]]
                 mask = mask[:, [0]]
                 y_w = torch.where(y_w==1, self.boundary_weight, 1)
-
-                # # create index for season
-                # seasons = [filename.split('_')[0] for filename in batch[2]]
-                # seasons = [False if season == 'spring' else True for season in seasons]
-                # y_w_ones = torch.ones_like(y_w)
-                # y_w[seasons] = y_w_ones[seasons]
 
                 pred = model(image)
 
@@ -185,7 +181,8 @@ class Training:
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict() if optimizer else None,
             'epoch': epoch,
-            'metrics': metrics
+            'metrics': metrics,
+            'parameters': self.config
         }
         torch.save(checkpoint, os.path.join(self.checkpoints_dir, f'{name}.pth'))
 
@@ -194,7 +191,6 @@ class Training:
         train_set = datagen.Datagen(self.data_dir,
                                     set_name="train",
                                     patch_size=self.patch_size,
-                                    stretch_setting=self.stretch_setting,
                                     random_crop=True)
         train_loader = DataLoader(train_set,
                                   self.batch_size,

@@ -17,7 +17,6 @@ class Datagen:
                  set_name='train',
                  rescale_value=2000,
                  patch_size=256,
-                 stretch_setting=2,
                  random_crop=False):
 
         self.data_dir = data_dir
@@ -27,7 +26,6 @@ class Datagen:
         self.image_paths = sorted(glob(os.path.join(self.data_dir, self.set_name, "images/*.tif")))
         self.label_paths = sorted(glob(os.path.join(self.data_dir, self.set_name, "labels/*.tif")))
         self.patch_size = patch_size
-        self.stretch_setting = stretch_setting
 
     def __len__(self):
         return len(self.image_paths)
@@ -55,10 +53,7 @@ class Datagen:
             label = label[:, cy:cy + self.patch_size, cx:cx + self.patch_size]
 
             # apply image stretch
-            if self.stretch_setting == 1:
-                image = image * np.random.uniform(0.8, 1.25)
-            elif self.stretch_setting == 2:
-                image = image * np.random.uniform(0.5, 2.0)
+            image = image * np.random.uniform(0.5, 2.0)
 
         return image, label, filename
 
