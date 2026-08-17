@@ -93,7 +93,7 @@ Adjust `--keyword`, `--in_dir`, and `--out_dir` as needed. For the full list of 
 
 ## Postprocessing
 Use `computeTreeCanopyCover.py` and `identifyTreeline.py` to estimate tree canopy cover and the treeline, respectively.
-Running these scripts requires gdal to be installed separately again.
+Running these scripts requires `gdal` to be installed that is not added in `requirements.txt` file.
 
 ## A note on the data source
 All default hyperparameters in train.py (e.g., learning rate, patch size) were selected for our specific dataset.
