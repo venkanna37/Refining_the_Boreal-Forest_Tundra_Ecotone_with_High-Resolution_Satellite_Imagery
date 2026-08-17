@@ -49,8 +49,10 @@ datasets                  # All datasets or dataset folder
 
 runs                      # All checkpoints or trained models
 └── unet_fold1            # checkpoint with --keyword unet_fold1
-    ├── best_f1score.pt   # Model weights with highest f1-score on val set
-    └── tnet_precision.pt # Model weights with highest precision on val set
+    ├── best_f1.pt        # Model weights with highest f1-score on val set
+    └── best_precision.pt # Model weights with highest precision on val set
+    └── best_recall.pt    # Model weights with highest recall on val set
+    └── latest.pt         # Model weights of last or latest epoch
 ```
 
 ---
