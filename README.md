@@ -92,7 +92,7 @@ python pred.py --keyword arctic_data_run --in_dir ./datasets/tiles_folder --out_
 Adjust `--keyword`, `--in_dir`, and `--out_dir` as needed. For the full list of options, run: `python pred.py --help`
 
 ## Postprocessing
-Use `computeTreeCanopyCover.py` and `identifyTreeline.py` to estimate tree canopy cover and the treeline, respectively.
+Use `tools/computeTreeCanopyCover.py` and `tools/identifyTreeline.py` to estimate tree canopy cover and the treeline, respectively.
 Running these scripts requires `gdal` to be installed that is not added in `requirements.txt` file.
 
 ## A note on the data source
