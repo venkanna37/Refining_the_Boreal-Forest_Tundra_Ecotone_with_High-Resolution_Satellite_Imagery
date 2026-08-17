@@ -1,12 +1,11 @@
-⚠️ **This code is under preparation. It will be ready soon!**
-
 # Refining the Boreal-Forest Tundra Ecotone with High-Resolution Satellite Imagery
-This repository contains the training U-Net and other essential codes for mapping trees in Tundra region from high-resolution panchromatic images.
+This repository contains the training code for a U-Net model, along with other essential code,
+for mapping trees in tundra regions from high-resolution panchromatic satellite imagery.
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21892162.svg)](https://doi.org/10.5281/zenodo.21892162)
 
-The code is structured as separate python file for each task  (e.g., `train.py` for training).
-Each python file contains a considerable part of the pipeline and they are supported with other python files available in the `tools` directory.
+The code is organized as a separate Python file for each task (e.g., `train.py` for training).
+Each file implements a substantial part of complete pipeline and is supported by helper modules in the `tools` directory.
 
 The outline of this repository is given as follows:
 * [**Installation**](#installation)
@@ -18,9 +17,9 @@ The outline of this repository is given as follows:
 
 
 ## Installation
-Installing all the packages listed in `requirements.txt` allows you to run the code.
-The commands below create Conda environment and install all the packages.
-Packages can also install in other python environments instead of creating conda environment.
+Installing the packages listed in `requirements.txt` is all that's required to run the code.
+The commands below create a Conda environment and install the dependencies.
+The packages can also be installed into any other Python environment if you prefer not to use Conda.
 
 ```bash
 conda create -n "arctic" python=3.11.0
@@ -31,14 +30,14 @@ pip install -r requirements.txt
 
 ## Data
 Custom datasets must follow the folder structure shown below.
-Both images and labels should prepare and save in `.tif` format in respective folder.
-Example data of building segmentation (not trees) are provided in the `datasets/sample_data` folder.
+Both images and labels should be prepared and save in `.tif` format in respective folder.
 The training pipeline saves checkpoints in `runs` folder as shown below.
-Custom directories `datasets` and `runs` folders can be specified  while running training and evaluation scripts.
+`tiles_folder` is the directory with larger tiles.
+Custom directories of `datasets`, `tiles_folder` and `runs` folders can be specified  while running training and evaluation scripts.
 
 ```
 datasets                  # All datasets or dataset folder
-└── fold1                 # Complete dataset
+└── arctic_data           # Complete dataset
     ├── train             # Training set
     │   ├── images        # Input images in .tif format
     │   └── labels        # Input labels in .tif format
@@ -46,8 +45,6 @@ datasets                  # All datasets or dataset folder
     │   └── ...           # Same structure as train
     └── test              # Test set
         └── ...           # Same structure as train
-└── sample_dataset        # sample dataset for testing the code
-        └── ...           # Same structure as fold1
 └── tiles_folder          # Folder with all bigger tiles
 
 runs                      # All checkpoints or trained models
@@ -59,15 +56,15 @@ runs                      # All checkpoints or trained models
 ---
 
 ## Training
-To train the model on `sample_data`, run:
+To train the model on `arctic_data`, run:
 
 ```bash
-python train.py --keyword unet_fold1 --data_dir ./datasets/sample_data
+python train.py --keyword arctic_data_run --data_dir ./datasets/arctic_data/
 ```
 
-Change `--data_dir` to custom data directory to train on it. Also change `--keyword` to save checkpoints to new folder.
+Change `--data_dir` to point to a custom dataset, and `--keyword` to save checkpoints under a new name.
 
-For all available options like `--data_dir` and `--keyword`, run:
+For the full list of options (e.g., `--data_dir`, `--keyword`), run:
 
 ```bash
 python train.py --help
@@ -76,30 +73,29 @@ python train.py --help
 ---
 
 ## Evaluation
-To evaluate the model on `sample_data` (on `test` set), run:
+To evaluate the model on `arctic_data` (on `test` set), run:
 
 ```bash
-python eval.py --keyword unet_fold1 --data_dir ./datasets/sample_data --set_name test
+python eval.py --keyword arctic_data_run --data_dir ./datasets/arctic_data/ --set_name test
 ```
 
-Change `--keyword`, `--data_dir` and `--set_name` accordingly and run `python pred.py --help` for all options.
+Adjust `--keyword`, `--data_dir`, and `--set_name` as needed. For the full list of options, run: `python pred.py --help`
 
 
 ## Predict tiles
-To predict all tiles in the folder `tiles_folder`, run:
+To run inference on all tiles in `tiles_folder`, run:
 
 ```bash
-python pred.py --keyword test_run --data_dir ./datasets/tiles_folder
+python pred.py --keyword arctic_data_run --in_dir ./datasets/tiles_folder --out_dir ./runs/predictions/
 ```
 
-Change `--keyword` and `--data_dir` accordingly and run `python pred.py --help` for all options.
+Adjust `--keyword`, `--in_dir`, and `--out_dir` as needed. For the full list of options, run: `python pred.py --help`
 
 ## Postprocessing
-Coming soon
+Use `computeTreeCanopyCover.py` and `identifyTreeline.py` to estimate tree canopy cover and the treeline, respectively.
+Running these scripts requires gdal to be installed separately again.
 
 ## A note on the data source
-Adjust hyperparameters for the dataset.
-This code is customized for the data that was available to us.
-It relies on satellite images with single channel and assumes that the one channel is stored in independent file
-and consequently read independently. Labels available 
-In case your data is available in a single file (maybe with multiple channels), then use `--num_channels` options.
+All default hyperparameters in train.py (e.g., learning rate, patch size) were selected for our specific dataset.
+The evaluation and prediction code is also written for a fixed patch/image size,
+so parts of the code may need to be adjusted if the patch size changes.

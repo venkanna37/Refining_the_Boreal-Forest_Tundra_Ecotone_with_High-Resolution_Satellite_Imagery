@@ -19,8 +19,6 @@ if __name__ == '__main__':
                         help='Patch size while training')
     parser.add_argument("--data_dir", type=str, default='./datasets',
                         help='Directory to the datasets')
-    parser.add_argument("--dataset_name", type=str, default='sample_data',
-                        help='Name of the dataset inside dataset directory')
 
     # model and training parameters
     parser.add_argument("--epochs", type=int, default=20000,
@@ -53,8 +51,5 @@ if __name__ == '__main__':
     parser.add_argument("--use_wb", action=argparse.BooleanOptionalAction, default=False,
                         help='Use weights and biases for visualisation')
     params = vars(parser.parse_args())
-    if params['dataset_name'] is not None:
-        params['data_dir'] = os.path.join(params['data_dir'], params["dataset_name"])
-
     train = training.Training(**params)
     train.train()

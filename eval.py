@@ -25,7 +25,6 @@ if __name__ == '__main__':
                         help='Select the weights file name based on metric',
                         choices=['best_precision', 'best_recall', 'best_f1', 'latest'])
 
-    parser.add_argument("--model_name", type=str, default='unet_relu_bn')
     parser.add_argument("--pred_setting", type=int, default=1,
                         help='1: select all models, 2: First five models 3: last five models')
     # 1 :- all models
@@ -34,15 +33,10 @@ if __name__ == '__main__':
 
     parser.add_argument("--data_dir", type=str, default='./datasets',
                         help='Directory to the datasets')
-    parser.add_argument("--dataset_name", type=str, default='sample_data',
-                        help='Name of the dataset inside dataset directory')
     parser.add_argument('--checkpoints_dir', type=str, default='./runs',
                         help='output directory to save check points and logs')
 
     params = vars(parser.parse_args())
-
-    if params['dataset_name'] is not None:
-        params['data_dir'] = os.path.join(params['data_dir'], params["dataset_name"])
     params['image_dir'] = os.path.join(params['data_dir'], params['set_name'], 'images')
     params['label_dir'] = os.path.join(params['data_dir'], params['set_name'], 'labels')
 

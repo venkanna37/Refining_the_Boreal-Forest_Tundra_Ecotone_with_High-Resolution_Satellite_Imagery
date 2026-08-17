@@ -123,6 +123,8 @@ class ArcticEvaluation:
     def __init__(self, **kwargs):
         self.images = sorted(glob(os.path.join(kwargs['image_dir'], '*.tif')))
         self.labels = sorted(glob(os.path.join(kwargs['label_dir'], '*.tif')))
+        print(f'Number of images {self.images}')
+        print(f'Number of labels {self.labels}')
         self.pretrained_model = kwargs['pretrained_model']
         self.ensemble = kwargs['ensemble']
         self.set_name = kwargs['set_name']
@@ -155,11 +157,11 @@ class ArcticEvaluation:
             with rasterio.open(label_path) as src:
                 y_true = src.read(1)
                 y_true[y_true > 1] = 0
-                y_true = y_true[47:-47, 47:-47]
+                # y_true = y_true[47:-47, 47:-47]
                 y_true = torch.from_numpy(y_true).to(self.device)
 
-            # y_pred = y_pred[1:-1, 1:-1] #fixme
-            import ipdb; ipdb.set_trace()
+            # this chave evaluating on predictions that are generated with reflection padding
+            y_pred = y_pred[1:-1, 1:-1]
             metrics.update(y_pred, y_true)
             if self.set_name == 'test':
                 individual_metrics.reset()

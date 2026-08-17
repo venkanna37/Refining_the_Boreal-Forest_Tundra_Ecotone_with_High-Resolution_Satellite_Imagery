@@ -82,11 +82,13 @@ def apply_model_on_geotiff(
         rescale_value = 2000,
         patch_size=None,
         border=47,
-        ensemble_mode='majority',
-        model_name='unet_elu'):
+        ensemble_mode='majority'):
 
     models = {}
     for i, path in enumerate(checkpoint_path):
+        checkpoint = torch.load(path, map_location=device)
+        model_name = checkpoint['parameters']['model_name']
+
         # Setup model
         if model_name == 'unet_elu':
             model = network_elu.TinyUNet()
@@ -96,8 +98,7 @@ def apply_model_on_geotiff(
             model = network.TinyUNet()
         else:
             raise Exception("Unknown model name")
-        # model = network.TinyUNet()
-        checkpoint = torch.load(path, map_location=device)
+
         model.load_state_dict(checkpoint["model"])
         model.to(device)
         model.eval()
@@ -219,7 +220,6 @@ class ArcticPredict:
         self.out_dir = kwargs['out_dir']
         self.patch_size = kwargs['patch_size']
         self.ensemble_mode = kwargs['ensemble_mode']
-        self.model_name = kwargs['model_name']
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.csv_path = kwargs['csv_path']
 
@@ -233,8 +233,7 @@ class ArcticPredict:
                                        output_path=output_path,
                                        device=self.device,
                                        patch_size=self.patch_size,
-                                       ensemble_mode=self.ensemble_mode,
-                                       model_name=self.model_name)
+                                       ensemble_mode=self.ensemble_mode)
                 status = 'success'
             except Exception as e:
                 print(f"Failed to process {image_path}: {e}")
