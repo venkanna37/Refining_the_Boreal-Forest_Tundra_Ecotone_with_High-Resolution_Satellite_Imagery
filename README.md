@@ -94,8 +94,19 @@ python pred.py --keyword arctic_data_run --in_dir ./datasets/tiles_folder --out_
 Adjust `--keyword`, `--in_dir`, and `--out_dir` as needed. For the full list of options, run: `python pred.py --help`
 
 ## Postprocessing
-Use `tools/computeTreeCanopyCover.py` and `tools/identifyTreeline.py` to estimate tree canopy cover and the treeline, respectively.
-Running these scripts requires `gdal` to be installed that is not added in `requirements.txt` file.
+Use `tools/computeTreeCanopyCover.py` to convert a polygon vector layer of tree predictions into a 100 m tree canopy cover layer.
+Polygons smaller than two square meters are excluded from the calculation. Additionally, a land cover classification is used to 
+exclude polygons that intersect water and urban land. This script is designed to run with the land cover classification from
+[![Zhang et al. (2024)](https://doi.org/10.5281/ZENODO.8239304.). Users will need to modify the code to work with another product.
+Running this script requires `gdal` to be installed, which is not included within the `requirements.txt` file.
+
+Use `tools/identifyTreeline.py` to estimate a treeline from a tree canopy cover vector layer. We defined the northern edge of the 
+boreal forest as having consistent, but not constant, tree canopy cover of at least 3%. `identifyTreeline.py` was designed to operate 
+using a vectorized version of the 100 m tree canopy cover estimates produced with `computeTreeCanopyCover.py`. We thresholded the 100 m 
+tree canopy cover raster at 3%, converted it into a binary raster of forest and not forest, and vectorized it into a polygon vector 
+layer to use as input into `identifyTreeline.py`. `identifyTreeline.py` then iteratively identifies identifies and merges polygons 
+within a buffer distance until no more polygons are within the buffer distance. The largest three polygons within the input vector
+layer are used to initiate the processing.
 
 ## A note on the data source
 All default hyperparameters in train.py (e.g., learning rate, patch size) were selected for our specific dataset.
