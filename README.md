@@ -104,7 +104,7 @@ Use `tools/identifyTreeline.py` to estimate a treeline from a tree canopy cover 
 boreal forest as having consistent, but not constant, tree canopy cover of at least 3%. `identifyTreeline.py` was designed to operate 
 using a vectorized version of the 100 m tree canopy cover estimates produced with `computeTreeCanopyCover.py`. We thresholded the 100 m 
 tree canopy cover raster at 3%, converted it into a binary raster of forest and not forest, and vectorized it into a polygon vector 
-layer to use as input into `identifyTreeline.py`. `identifyTreeline.py` then iteratively identifies identifies and merges polygons 
+layer to use as input into `identifyTreeline.py`. `identifyTreeline.py` then iteratively identifies and merges polygons 
 within a buffer distance until no more polygons are within the buffer distance. The largest three polygons within the input vector
 layer are used to initiate the processing.
 
