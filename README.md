@@ -97,7 +97,7 @@ Adjust `--keyword`, `--in_dir`, and `--out_dir` as needed. For the full list of 
 Use `tools/computeTreeCanopyCover.py` to convert a polygon vector layer of tree predictions into a 100 m tree canopy cover layer.
 Polygons smaller than two square meters are excluded from the calculation. Additionally, a land cover classification is used to 
 exclude polygons that intersect water and urban land. This script is designed to run with the land cover classification from
-[![Zhang et al. (2024)](https://doi.org/10.5281/ZENODO.8239304). Users will need to modify the code to work with another product.
+Zhang et al. (2024): https://doi.org/10.5281/ZENODO.8239304. Users will need to modify the code to work with another product.
 Running this script requires `gdal` to be installed, which is not included within the `requirements.txt` file.
 
 Use `tools/identifyTreeline.py` to estimate a treeline from a tree canopy cover vector layer. We defined the northern edge of the 
