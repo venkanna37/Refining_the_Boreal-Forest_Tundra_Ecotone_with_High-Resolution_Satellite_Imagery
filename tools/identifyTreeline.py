@@ -79,7 +79,7 @@ def main():
     parser = argparse.ArgumentParser(description='Iteratively identify polygons within buffer distance.', formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-i', '--inputGPKG', type=os.path.abspath, metavar='PATH', required = True, 
-                        help="""Path to geopackage to be used for zonal statistics.""")
+                        help="""Path to input geopackage.""")
     parser.add_argument('-o', '--outputFile', type=os.path.abspath, metavar='PATH', required = True,
                         help="""Path to output geopackage.""")
     parser.add_argument('-b', '--buffer', type=int, metavar='int', required = True,
