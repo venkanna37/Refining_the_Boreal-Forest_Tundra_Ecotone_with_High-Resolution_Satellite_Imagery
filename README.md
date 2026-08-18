@@ -2,7 +2,7 @@
 This repository contains the training code for a U-Net model, along with other essential code,
 for mapping trees in tundra regions from high-resolution panchromatic satellite imagery.
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21892162.svg)](https://doi.org/10.5281/zenodo.21892162)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21998206.svg)](https://doi.org/10.5281/zenodo.21998206)
 
 The code is organized as a separate Python file for each task (e.g., `train.py` for training).
 Each file implements a substantial part of complete pipeline and is supported by helper modules in the `tools` directory.
